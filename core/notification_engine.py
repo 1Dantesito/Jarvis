@@ -168,6 +168,8 @@ class NotificationEngine:
         Incluye soporte para recordatorios exactos, etapas previas y catch-up de recordatorios vencidos offline.
         """
         now = reference_now or datetime.now().astimezone()
+        if now.tzinfo is None:
+            now = now.astimezone()
         db = SessionLocal()
         notifications_sent = []
 
@@ -204,7 +206,24 @@ class NotificationEngine:
                         notification_msg = f"Recordatorio pendiente: {rem.title} ({rem.display_datetime})"
                     else:
                         notification_msg = f"¡Momento de: {rem.title}!" if priority in ["HIGH", "URGENT"] else f"Recordatorio: {rem.title}"
-                    rem.status = "NOTIFIED"
+                    
+                    if rem.is_recurring and rem.recurrence_rule:
+                        # Calcular y avanzar a la siguiente ocurrencia
+                        from core.reminders import advance_recurrence, reminder_engine
+                        next_dt = advance_recurrence(rem.recurrence_rule, rem.target_datetime_iso)
+                        if next_dt:
+                            rem.target_datetime_iso = next_dt.isoformat()
+                            rem.display_datetime = next_dt.strftime("%A, %d de %B de %Y a las %I:%M %p")
+                            rem.stages_notified = ""
+                            rem.status = "PENDING"
+                            try:
+                                reminder_engine.sync_job_for_reminder(rem)
+                            except Exception:
+                                pass
+                        else:
+                            rem.status = "NOTIFIED"
+                    else:
+                        rem.status = "NOTIFIED"
 
                 elif priority == "URGENT":
                     if 0.05 < diff_minutes <= 15 and "15m" not in stages:
@@ -240,8 +259,9 @@ class NotificationEngine:
                     rem.status = "MISSED"
 
                 if should_notify and stage_tag:
-                    stages.add(stage_tag)
-                    rem.stages_notified = ",".join(sorted(stages))
+                    if not (rem.is_recurring and rem.recurrence_rule and stage_tag == "exact"):
+                        stages.add(stage_tag)
+                        rem.stages_notified = ",".join(sorted(stages))
                     rem.updated_at = datetime.now(timezone.utc)
                     
                     # 1. Disparo de notificaciones multicanal (Desktop, WebPush Stub)

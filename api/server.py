@@ -229,6 +229,22 @@ class ChatRequest(BaseModel):
     device_id: Optional[str] = None
     image: Optional[Dict[str, Any]] = None
 
+class CreateReminderRequest(BaseModel):
+    title: Optional[str] = None
+    remind_at: Optional[str] = None
+    priority: Optional[str] = "NORMAL"
+    description: Optional[str] = ""
+    # Aliases
+    text: Optional[str] = None
+    time: Optional[str] = None
+    when: Optional[str] = None
+    date: Optional[str] = None
+    reminder: Optional[str] = None
+
+class SnoozeReminderRequest(BaseModel):
+    minutes: Optional[int] = 10
+
+
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatRequest):
     cleanup_old_audio()
@@ -386,8 +402,55 @@ async def get_profile_endpoint():
     return api_envelope(ok=True, data=memory_manager.get_all_profile())
 
 @app.get("/api/reminders")
-async def get_reminders_endpoint():
-    return api_envelope(ok=True, data=memory_manager.list_reminders())
+async def get_reminders_endpoint(include_completed: bool = False):
+    return api_envelope(ok=True, data=memory_manager.list_reminders(include_completed=include_completed))
+
+@app.post("/api/reminders")
+async def create_reminder_endpoint(payload: CreateReminderRequest):
+    clean_title = (
+        payload.title or payload.text or payload.reminder or "Recordatorio"
+    ).strip()
+    clean_remind_at = (
+        payload.remind_at or payload.time or payload.when or payload.date or payload.description or "en 1 hora"
+    ).strip()
+    clean_priority = (payload.priority or "NORMAL").upper()
+
+    res = memory_manager.create_reminder(
+        title=clean_title,
+        remind_at_expression=clean_remind_at,
+        priority=clean_priority,
+        description=payload.description or ""
+    )
+    if res.get("success"):
+        return api_envelope(ok=True, data=res.get("data"))
+    return api_envelope(ok=False, data=None, error={"code": "CREATION_FAILED", "message": res.get("error", "Error creando recordatorio")}, status_code=400)
+
+@app.delete("/api/reminders/{reminder_id}")
+async def delete_reminder_endpoint(reminder_id: int):
+    res = memory_manager.delete_reminder(reminder_id)
+    if res.get("success"):
+        return api_envelope(ok=True, data=res)
+    return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": res.get("error", "No encontrado")}, status_code=404)
+
+@app.post("/api/reminders/{reminder_id}/snooze")
+async def snooze_reminder_endpoint(reminder_id: int, payload: Optional[SnoozeReminderRequest] = None):
+    mins = payload.minutes if payload and payload.minutes else 10
+    res = memory_manager.snooze_reminder(reminder_id=reminder_id, minutes=mins)
+    if res.get("success"):
+        return api_envelope(ok=True, data=res.get("data"))
+    return api_envelope(ok=False, data=None, error={"code": "SNOOZE_FAILED", "message": res.get("error", "Error al posponer")}, status_code=400)
+
+@app.post("/api/reminders/{reminder_id}/complete")
+async def complete_reminder_endpoint(reminder_id: int):
+    ok = memory_manager.complete_reminder(reminder_id=reminder_id)
+    if ok:
+        return api_envelope(ok=True, data={"id": reminder_id, "status": "COMPLETED"})
+    return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": f"No se encontró recordatorio #{reminder_id}"}, status_code=404)
+
+@app.delete("/api/reminders")
+async def clear_reminders_endpoint():
+    res = memory_manager.clear_all_reminders()
+    return api_envelope(ok=True, data=res)
 
 @app.get("/api/pending")
 async def get_pending_endpoint():

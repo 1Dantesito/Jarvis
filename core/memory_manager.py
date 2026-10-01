@@ -460,11 +460,21 @@ class MemoryManager:
                 timezone=parsed.get("timezone", "Local"),
                 priority=prio_clean,
                 status="PENDING",
-                stages_notified=""
+                stages_notified="",
+                is_recurring=parsed.get("is_recurring", False),
+                recurrence_rule=parsed.get("recurrence_rule")
             )
             db.add(rem)
             db.commit()
             db.refresh(rem)
+
+            # Sincronización proactiva con APScheduler
+            try:
+                from core.reminders import reminder_engine
+                reminder_engine.sync_job_for_reminder(rem)
+            except Exception as e_sched:
+                logger.debug(f"[Memoria] No se pudo sincronizar APScheduler: {e_sched}")
+
             return {
                 "success": True,
                 "data": {
@@ -474,7 +484,9 @@ class MemoryManager:
                     "display_datetime": rem.display_datetime,
                     "priority": rem.priority,
                     "status": rem.status,
-                    "is_ambiguous": parsed.get("is_ambiguous", False)
+                    "is_ambiguous": parsed.get("is_ambiguous", False),
+                    "is_recurring": rem.is_recurring,
+                    "recurrence_rule": rem.recurrence_rule
                 }
             }
         except Exception as e:
@@ -522,6 +534,14 @@ class MemoryManager:
             rem.stages_notified = ""
             rem.updated_at = datetime.now(timezone.utc)
             db.commit()
+
+            # Sincronizar nuevo tiempo con APScheduler
+            try:
+                from core.reminders import reminder_engine
+                reminder_engine.sync_job_for_reminder(rem)
+            except Exception:
+                pass
+
             return {
                 "success": True,
                 "data": {
@@ -545,6 +565,11 @@ class MemoryManager:
                 rem.status = "COMPLETED"
                 rem.updated_at = datetime.now(timezone.utc)
                 db.commit()
+                try:
+                    from core.reminders import reminder_engine
+                    reminder_engine.remove_job_for_reminder(reminder_id)
+                except Exception:
+                    pass
                 return True
             return False
         except Exception:
@@ -558,6 +583,11 @@ class MemoryManager:
         try:
             deleted = db.query(ReminderModel).delete()
             db.commit()
+            try:
+                from core.reminders import reminder_engine
+                reminder_engine.clear_all_jobs()
+            except Exception:
+                pass
             return {"success": True, "message": f"Se eliminaron {deleted} recordatorios."}
         except Exception as e:
             db.rollback()
@@ -576,8 +606,14 @@ class MemoryManager:
 
             if rem:
                 title = rem.title
+                rem_id = rem.id
                 db.delete(rem)
                 db.commit()
+                try:
+                    from core.reminders import reminder_engine
+                    reminder_engine.remove_job_for_reminder(rem_id)
+                except Exception:
+                    pass
                 return {"success": True, "message": f"Recordatorio '{title}' eliminado."}
             return {"success": False, "error": f"No se encontró ningún recordatorio que coincida con '{reminder_id_or_title}'."}
         except Exception as e:
@@ -613,6 +649,11 @@ class MemoryManager:
             del_rems = db.query(ReminderModel).delete()
             del_tasks = db.query(TaskModel).delete()
             db.commit()
+            try:
+                from core.reminders import reminder_engine
+                reminder_engine.clear_all_jobs()
+            except Exception:
+                pass
             return {
                 "success": True,
                 "deleted_reminders": del_rems,

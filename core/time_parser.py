@@ -19,6 +19,13 @@ class TimeParser:
         9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
     }
 
+    MONTHS_MAP = {
+        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
+        "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
+        "septiembre": 9, "setiembre": 9, "octubre": 10,
+        "noviembre": 11, "diciembre": 12
+    }
+
     DAYS_ES = {
         0: "lunes", 1: "martes", 2: "miércoles", 3: "jueves",
         4: "viernes", 5: "sábado", 6: "domingo"
@@ -27,19 +34,34 @@ class TimeParser:
     @classmethod
     def parse(cls, expression: str, reference_dt: Optional[datetime] = None) -> Dict[str, Any]:
         ref = reference_dt or datetime.now().astimezone()
+        if ref.tzinfo is None:
+            ref = ref.astimezone()
         raw_expr = expression.strip()
         expr = raw_expr.lower()
+
+        # 1. Evaluación de expresiones recurrentes ("cada lunes a las 9am", "todos los días a las 8am", "cada 30 min")
+        recurrent_info = cls._match_recurrent(expr, ref)
+        if recurrent_info is not None:
+            target_dt = recurrent_info["target_dt"]
+            return cls._format_result(
+                target_dt,
+                raw_expr,
+                is_ambiguous=False,
+                is_recurring=True,
+                recurrence_rule=recurrent_info["recurrence_rule"],
+                note=f"Recurrente: {recurrent_info['display']}"
+            )
         
-        # 1. Deltas relativos simples ("en 15 minutos", "en 2 horas", "en 1 hora", "en media hora")
+        # 2. Deltas relativos simples ("en 15 minutos", "en 2 horas", "en 1 hora", "en media hora", "en 3 días")
         delta = cls._match_delta(expr)
         if delta is not None:
             target_dt = (ref + delta).replace(second=0, microsecond=0)
             return cls._format_result(target_dt, raw_expr, is_ambiguous=False)
 
-        # 2. Extracción de fecha base (hoy, mañana, pasado mañana, ayer, día de semana)
+        # 3. Extracción de fecha base (calendario "5 de octubre", numérico "15/10/2026", hoy, mañana, días de semana)
         target_date, is_date_found, rem_expr = cls._extract_target_date(expr, ref)
 
-        # 3. Extracción determinista de hora con soporte completo para AM/PM, formatos coloquiales y modificadores
+        # 4. Extracción determinista de hora con soporte para AM/PM, mediodía, medianoche y coloquiales
         time_tuple, is_ambiguous, amb_details = cls._extract_time(rem_expr, target_date, ref)
 
         if time_tuple is not None:
@@ -50,11 +72,18 @@ class TimeParser:
             if target_date.date() == ref.date() and target_dt < ref and is_ambiguous and hour < 12:
                 target_dt = target_dt.replace(hour=hour + 12)
                 is_ambiguous = False
+
+            # Si NO se especificó una fecha explícita (ni día, ni mes, ni 'hoy'),
+            # y la hora elegida ya pasó hoy, se programa para la siguiente ocurrencia (mañana)
+            if not is_date_found and target_dt <= ref:
+                target_dt = target_dt + timedelta(days=1)
                 
             return cls._format_result(target_dt, raw_expr, is_ambiguous=is_ambiguous, ambiguity_details=amb_details)
         elif is_date_found:
             # Fecha identificada sin hora explícita (asumir 9:00 AM)
             target_dt = target_date.replace(hour=9, minute=0, second=0, microsecond=0)
+            if target_dt < ref and target_date.date() == ref.date():
+                target_dt = target_dt + timedelta(days=1)
             return cls._format_result(target_dt, raw_expr, is_ambiguous=False, note="Hora asumida: 9:00 AM")
 
         return {
@@ -63,8 +92,79 @@ class TimeParser:
             "datetime_formatted": None,
             "source_expression": raw_expr,
             "is_ambiguous": False,
+            "is_recurring": False,
+            "recurrence_rule": None,
             "error": f"No se pudo interpretar la expresión temporal: '{raw_expr}'"
         }
+
+    @classmethod
+    def _match_recurrent(cls, expr: str, ref: datetime) -> Optional[Dict[str, Any]]:
+        expr_low = expr.lower()
+
+        # A. 'cada lunes a las 9am', 'todos los viernes a las 18:00'
+        for day_name, day_idx in cls.WEEKDAYS.items():
+            pattern = rf'\b(?:cada|todos los)\s+{day_name}\s+(?:a\s+las?\s+|para\s+las?\s+)?(.+)'
+            m_day = re.search(pattern, expr_low)
+            if m_day:
+                time_part = m_day.group(1).strip()
+                time_tuple, _, _ = cls._extract_time(time_part, ref, ref)
+                h, m = time_tuple if time_tuple else (9, 0)
+                current_day = ref.weekday()
+                days_ahead = (day_idx - current_day) % 7
+                if days_ahead == 0 and (h * 60 + m) <= (ref.hour * 60 + ref.minute):
+                    days_ahead = 7
+                target_dt = (ref + timedelta(days=days_ahead)).replace(hour=h, minute=m, second=0, microsecond=0)
+                disp = f"Cada {day_name.capitalize()} a las {target_dt.strftime('%I:%M %p').lstrip('0')}"
+                return {
+                    "is_recurring": True,
+                    "recurrence_rule": f"cada {day_name} a las {h:02d}:{m:02d}",
+                    "target_dt": target_dt,
+                    "display": disp
+                }
+
+        # B. 'todos los días a las 8am', 'cada día a las 7 pm', 'diariamente a las 10:30'
+        m_daily = re.search(r'\b(?:cada d[ií]a|diariamente|todos los d[ií]as)\s+(?:a\s+las?\s+|para\s+las?\s+)?(.+)', expr_low)
+        if m_daily:
+            time_part = m_daily.group(1).strip()
+            time_tuple, _, _ = cls._extract_time(time_part, ref, ref)
+            h, m = time_tuple if time_tuple else (9, 0)
+            now_mins = ref.hour * 60 + ref.minute
+            req_mins = h * 60 + m
+            days_ahead = 0 if req_mins > now_mins else 1
+            target_dt = (ref + timedelta(days=days_ahead)).replace(hour=h, minute=m, second=0, microsecond=0)
+            disp = f"Todos los días a las {target_dt.strftime('%I:%M %p').lstrip('0')}"
+            return {
+                "is_recurring": True,
+                "recurrence_rule": f"cada dia a las {h:02d}:{m:02d}",
+                "target_dt": target_dt,
+                "display": disp
+            }
+
+        # C. 'cada X minutos'
+        m_min = re.search(r'\bcada\s+(\d+)\s+min(?:uto)?s?\b', expr_low)
+        if m_min:
+            mins = int(m_min.group(1))
+            target_dt = (ref + timedelta(minutes=mins)).replace(second=0, microsecond=0)
+            return {
+                "is_recurring": True,
+                "recurrence_rule": f"cada {mins} minutos",
+                "target_dt": target_dt,
+                "display": f"Cada {mins} minutos"
+            }
+
+        # D. 'cada X horas'
+        m_hr = re.search(r'\bcada\s+(\d+)\s+horas?\b', expr_low)
+        if m_hr:
+            hrs = int(m_hr.group(1))
+            target_dt = (ref + timedelta(hours=hrs)).replace(second=0, microsecond=0)
+            return {
+                "is_recurring": True,
+                "recurrence_rule": f"cada {hrs} horas",
+                "target_dt": target_dt,
+                "display": f"Cada {hrs} horas"
+            }
+
+        return None
 
     @classmethod
     def _match_delta(cls, expr: str) -> Optional[timedelta]:
@@ -90,6 +190,51 @@ class TimeParser:
     @classmethod
     def _extract_target_date(cls, expr: str, ref: datetime) -> Tuple[datetime, bool, str]:
         rem = expr
+
+        # 1. Fechas calendario con nombre de mes: "5 de octubre a las 4 pm", "el 25 de diciembre de 2026"
+        m_cal = re.search(r'\b(?:el\s+)?(?:d[ií]a\s+)?(\d{1,2})\s+de\s+([a-zñáéíóú]+)(?:\s+(?:del?\s+)?(\d{4}))?\b', rem)
+        if m_cal:
+            d = int(m_cal.group(1))
+            norm_month = m_cal.group(2).replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
+            if norm_month in cls.MONTHS_MAP and 1 <= d <= 31:
+                mo = cls.MONTHS_MAP[norm_month]
+                y = int(m_cal.group(3)) if m_cal.group(3) else ref.year
+                try:
+                    target = ref.replace(year=y, month=mo, day=d)
+                    if not m_cal.group(3) and target.date() < ref.date():
+                        target = target.replace(year=y + 1)
+                    cleaned = rem.replace(m_cal.group(0), "").strip()
+                    return target, True, cleaned
+                except Exception:
+                    pass
+
+        # 2. Fechas numéricas ISO (2026-10-05) o formato día/mes/año (15/10/2026)
+        m_iso = re.search(r'\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b', rem)
+        if m_iso:
+            try:
+                y, mo, d = int(m_iso.group(1)), int(m_iso.group(2)), int(m_iso.group(3))
+                target = ref.replace(year=y, month=mo, day=d)
+                cleaned = rem.replace(m_iso.group(0), "").strip()
+                return target, True, cleaned
+            except Exception:
+                pass
+
+        m_dmy = re.search(r'\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b', rem)
+        if m_dmy:
+            d, mo = int(m_dmy.group(1)), int(m_dmy.group(2))
+            if 1 <= mo <= 12 and 1 <= d <= 31:
+                y = int(m_dmy.group(3)) if m_dmy.group(3) else ref.year
+                if y < 100: y += 2000
+                try:
+                    target = ref.replace(year=y, month=mo, day=d)
+                    if not m_dmy.group(3) and target.date() < ref.date():
+                        target = target.replace(year=y + 1)
+                    cleaned = rem.replace(m_dmy.group(0), "").strip()
+                    return target, True, cleaned
+                except Exception:
+                    pass
+
+        # 3. Días relativos comunes
         if "pasado mañana" in rem or "pasado manana" in rem:
             return ref + timedelta(days=2), True, rem.replace("pasado mañana", "").replace("pasado manana", "")
         if "mañana" in rem or "manana" in rem:
@@ -102,7 +247,7 @@ class TimeParser:
         if "hoy" in rem or "esta noche" in rem or "esta tarde" in rem:
             return ref, True, rem.replace("hoy", "").replace("esta noche", "").replace("esta tarde", "")
             
-        # Días de la semana
+        # 4. Días de la semana
         for day_name, day_idx in cls.WEEKDAYS.items():
             pattern = rf'\b(?:el\s+|este\s+|pr[oó]ximo\s+)?{day_name}\b'
             if re.search(pattern, rem):
@@ -126,6 +271,12 @@ class TimeParser:
         s_norm = re.sub(r'p\.\s*m\.?', 'pm', s)
         s_norm = re.sub(r'a\.\s*m\.?', 'am', s_norm)
         
+        # Mediodía y medianoche explícitos
+        if re.search(r'\b(?:al\s+mediod[ií]a|del\s+mediod[ií]a|medio\s+d[ií]a)\b', s_norm):
+            return (12, 0), False, None
+        if re.search(r'\b(?:a\s+medianoche|medianoche|12\s+de\s+la\s+noche|12\s+de\s+la\s+madrugada)\b', s_norm):
+            return (0, 0), False, None
+
         # Indicadores explícitos de PM y AM
         is_pm = bool(re.search(r'\b(?:pm|p\.m\.|tarde|noche|de la tarde|de la noche)\b', s_norm))
         is_am = bool(re.search(r'\b(?:am|a\.m\.|mañana|madrugada|de la mañana|de la madrugada)\b', s_norm))
@@ -166,7 +317,13 @@ class TimeParser:
             if 1 <= raw_h <= 24 and 0 <= minute <= 59:
                 return _adjust_hour(raw_h, minute)
 
-        # 3. Patrón numérico directo de 3-4 dígitos (ej: "750 pm", "750 p.m", "1950", "0750")
+        # 3. Patrón numérico con 'h', 'hrs', 'horas' (ej: "18h", "17 hrs", "15 horas")
+        m_h = re.search(r'\b(?:a\s+las?\s+)?([01]?\d|2[0-3])\s*(?:h|hrs|horas?)\b', s_norm)
+        if m_h:
+            raw_h = int(m_h.group(1))
+            return _adjust_hour(raw_h, 0)
+
+        # 4. Patrón numérico directo de 3-4 dígitos (ej: "750 pm", "750 p.m", "1950", "0750")
         m_digits = re.search(r'\b([01]?\d|2[0-3])([0-5]\d)\s*(?:pm|am|p\.m\.|a\.m\.)?\b', s_norm)
         if m_digits and (is_pm or is_am or len(m_digits.group(0).strip()) == 4):
             raw_h = int(m_digits.group(1))
@@ -174,7 +331,7 @@ class TimeParser:
             if 1 <= raw_h <= 24 and 0 <= minute <= 59:
                 return _adjust_hour(raw_h, minute)
 
-        # 4. Patrón con hora sola o "en punto" (ej: "a las 6 pm", "a las 8 de la noche", "8 en punto", "a las 7")
+        # 5. Patrón con hora sola o "en punto" (ej: "a las 6 pm", "a las 8 de la noche", "8 en punto", "a las 7")
         m_hour = re.search(r'\b(?:a\s+las?\s+|para\s+las?\s+)(\d{1,2})(?:\s+en\s+punto)?\b', s_norm)
         if not m_hour:
             m_hour = re.search(r'\b(\d{1,2})\s*(?:en\s+punto|pm|am|p\.m\.|a\.m\.|de\s+la\s+tarde|de\s+la\s+noche|de\s+la\s+mañana)\b', s_norm)
@@ -188,7 +345,16 @@ class TimeParser:
         return None, False, None
 
     @classmethod
-    def _format_result(cls, dt: datetime, expr: str, is_ambiguous: bool = False, ambiguity_details: Optional[Dict[str, str]] = None, note: Optional[str] = None) -> Dict[str, Any]:
+    def _format_result(
+        cls,
+        dt: datetime,
+        expr: str,
+        is_ambiguous: bool = False,
+        ambiguity_details: Optional[Dict[str, str]] = None,
+        note: Optional[str] = None,
+        is_recurring: bool = False,
+        recurrence_rule: Optional[str] = None
+    ) -> Dict[str, Any]:
         weekday_name = cls.DAYS_ES.get(dt.weekday(), "")
         month_name = cls.MONTHS_ES.get(dt.month, "")
         time_12h = dt.strftime("%I:%M %p").lstrip("0")
@@ -206,5 +372,8 @@ class TimeParser:
             "source_expression": expr,
             "is_ambiguous": is_ambiguous,
             "ambiguity_details": ambiguity_details,
+            "is_recurring": is_recurring,
+            "recurrence_rule": recurrence_rule,
             "note": note
         }
+

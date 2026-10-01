@@ -17,17 +17,53 @@ class CreateReminderTool(BaseTool):
         "required": ["title", "remind_at"]
     }
 
-    async def execute(self, title: str, remind_at: str, priority: str = "NORMAL", description: str = "", **kwargs) -> Dict[str, Any]:
+    async def execute(
+        self,
+        title: Optional[str] = None,
+        remind_at: Optional[str] = None,
+        priority: str = "NORMAL",
+        description: str = "",
+        **kwargs
+    ) -> Dict[str, Any]:
         if not PermissionManager.is_granted(PermissionCategory.NOTIFICATIONS):
             return {
                 "success": False,
                 "data": {},
                 "error": "Permiso denegado: las notificaciones están desactivadas (NOTIFICATIONS)."
             }
+
+        clean_title = (
+            title or
+            kwargs.get("text") or
+            kwargs.get("content") or
+            kwargs.get("task") or
+            kwargs.get("reminder") or
+            kwargs.get("name") or
+            kwargs.get("message") or
+            "Recordatorio"
+        ).strip()
+
+        clean_remind_at = (
+            remind_at or
+            kwargs.get("time") or
+            kwargs.get("date") or
+            kwargs.get("datetime") or
+            kwargs.get("when") or
+            kwargs.get("target_time") or
+            kwargs.get("remind_time") or
+            kwargs.get("expression") or
+            kwargs.get("remind_at_expression") or
+            kwargs.get("at") or
+            description or
+            "en 1 hora"
+        ).strip()
+
+        clean_prio = (priority or kwargs.get("priority") or "NORMAL").upper()
+
         res = memory_manager.create_reminder(
-            title=title,
-            remind_at_expression=remind_at,
-            priority=priority,
+            title=clean_title,
+            remind_at_expression=clean_remind_at,
+            priority=clean_prio,
             description=description
         )
         return res

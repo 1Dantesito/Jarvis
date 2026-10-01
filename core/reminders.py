@@ -1,4 +1,4 @@
-﻿import re
+import re
 import os
 import sys
 import logging
@@ -69,18 +69,70 @@ def send_native_notification(title: str, message: str, priority: str = "NORMAL")
 
     return True
 
+def advance_recurrence(rule: str, current_target_iso: Optional[str] = None) -> Optional[datetime]:
+    """Calcula la siguiente fecha objetivo para un recordatorio recurrente."""
+    now = datetime.now().astimezone()
+    try:
+        base_dt = datetime.fromisoformat(current_target_iso) if current_target_iso else now
+        if base_dt.tzinfo is None:
+            base_dt = base_dt.replace(tzinfo=now.tzinfo)
+    except Exception:
+        base_dt = now
+
+    r_low = (rule or "").lower()
+
+    # 1. cada X minutos
+    m_min = re.search(r'cada\s+(\d+)\s+min(?:uto)?s?', r_low)
+    if m_min:
+        mins = int(m_min.group(1))
+        next_dt = base_dt + timedelta(minutes=mins)
+        while next_dt <= now:
+            next_dt += timedelta(minutes=mins)
+        return next_dt
+
+    # 2. cada X horas
+    m_hr = re.search(r'cada\s+(\d+)\s+horas?', r_low)
+    if m_hr:
+        hrs = int(m_hr.group(1))
+        next_dt = base_dt + timedelta(hours=hrs)
+        while next_dt <= now:
+            next_dt += timedelta(hours=hrs)
+        return next_dt
+
+    # 3. todos los días / cada día / diariamente
+    if any(k in r_low for k in ["cada dia", "cada día", "diariamente", "todos los dias", "todos los días"]):
+        next_dt = base_dt + timedelta(days=1)
+        while next_dt <= now:
+            next_dt += timedelta(days=1)
+        return next_dt
+
+    # 4. cada [día de semana]
+    next_dt = base_dt + timedelta(days=7)
+    while next_dt <= now:
+        next_dt += timedelta(days=7)
+    return next_dt
+
 def _job_dispatch_callback(reminder_id: int, title: str, message: str, priority: str, is_recurring: bool):
     """
     Función de ejecución autónoma invocada por APScheduler al vencer el recordatorio.
     """
-    logger.info(f"[Reminders Job] ¡Alarma disparada! #{reminder_id}: {title}")
-    
-    # 1. Notificación nativa SO (Plyer + Audio)
-    send_native_notification(title=title, message=message, priority=priority)
-
-    # 2. Transmisión a WebSockets activos
+    db = SessionLocal()
     try:
-        from core.notification_engine import NotificationEngine
+        rem = db.query(ReminderModel).filter(ReminderModel.id == reminder_id).first()
+        if not rem or rem.status not in ["PENDING", "SNOOZED"]:
+            return
+
+        stages = set(rem.stages_notified.split(",")) if rem.stages_notified else set()
+        if "exact" in stages:
+            # Ya fue notificado previamente por NotificationEngine
+            return
+
+        logger.info(f"[Reminders Job] ¡Alarma disparada! #{reminder_id}: {title}")
+        
+        # 1. Notificación nativa SO (Plyer + Audio)
+        send_native_notification(title=title, message=message, priority=priority)
+
+        # 2. Transmisión a WebSockets activos
         notif_data = {
             "reminder_id": reminder_id,
             "title": title,
@@ -89,26 +141,33 @@ def _job_dispatch_callback(reminder_id: int, title: str, message: str, priority:
             "is_recurring": is_recurring,
             "timestamp": datetime.now().astimezone().isoformat()
         }
-        for cb in NotificationEngine._broadcast_callbacks:
-            try:
-                cb(notif_data)
-            except Exception as cb_err:
-                logger.warning(f"[Reminders Job] Error en callback de broadcast: {cb_err}")
-    except Exception as e:
-        logger.debug(f"[Reminders Job] Error notificando WebSockets: {e}")
+        try:
+            from core.notification_engine import NotificationEngine
+            NotificationEngine._history.append(notif_data)
+            for cb in NotificationEngine._broadcast_callbacks:
+                try:
+                    cb(notif_data)
+                except Exception as cb_err:
+                    logger.warning(f"[Reminders Job] Error en callback de broadcast: {cb_err}")
+        except Exception as e:
+            logger.debug(f"[Reminders Job] Error notificando WebSockets: {e}")
 
-    # 3. Actualización de estado en base de datos SQLite
-    db = SessionLocal()
-    try:
-        rem = db.query(ReminderModel).filter(ReminderModel.id == reminder_id).first()
-        if rem:
-            if is_recurring:
-                rem.updated_at = datetime.now(timezone.utc)
+        # 3. Actualización de estado en base de datos SQLite
+        stages.add("exact")
+        rem.stages_notified = ",".join(sorted(stages))
+        if is_recurring and rem.recurrence_rule:
+            next_dt = advance_recurrence(rem.recurrence_rule, rem.target_datetime_iso)
+            if next_dt:
+                rem.target_datetime_iso = next_dt.isoformat()
+                rem.display_datetime = next_dt.strftime("%A, %d de %B de %Y a las %I:%M %p")
+                rem.stages_notified = ""
+                rem.status = "PENDING"
             else:
                 rem.status = "NOTIFIED"
-                rem.stages_notified = "exact"
-                rem.updated_at = datetime.now(timezone.utc)
-            db.commit()
+        else:
+            rem.status = "NOTIFIED"
+        rem.updated_at = datetime.now(timezone.utc)
+        db.commit()
     except Exception as db_err:
         db.rollback()
         logger.error(f"[Reminders Job] Error actualizando BD #{reminder_id}: {db_err}")
@@ -223,9 +282,9 @@ class ReminderEngine:
         if not parsed_dt:
             from core.time_parser import TimeParser
             try:
-                res = TimeParser.parse_natural_datetime(expr_raw, reference_datetime=now)
-                if res and res.get("is_valid"):
-                    parsed_dt = datetime.fromisoformat(res["target_datetime_iso"])
+                res = TimeParser.parse(expr_raw, reference_dt=now)
+                if res and res.get("success") and res.get("datetime_iso"):
+                    parsed_dt = datetime.fromisoformat(res["datetime_iso"])
             except Exception:
                 pass
 
@@ -368,14 +427,79 @@ class ReminderEngine:
         finally:
             db.close()
 
+    def sync_job_for_reminder(self, rem: ReminderModel):
+        """Programa o actualiza un job en APScheduler para un ReminderModel."""
+        if not self._scheduler:
+            return
+        job_id = f"jarvis_reminder_{rem.id}"
+        
+        # Eliminar si ya existía para actualizar
+        try:
+            if self._scheduler.get_job(job_id):
+                self._scheduler.remove_job(job_id)
+        except Exception:
+            pass
+
+        if rem.status not in ["PENDING", "SNOOZED"]:
+            return
+
+        if rem.is_recurring and rem.recurrence_rule:
+            trigger, is_rec, _, _ = self.parse_time_expression(rem.recurrence_rule)
+        else:
+            try:
+                target_dt = datetime.fromisoformat(rem.target_datetime_iso)
+                now = datetime.now().astimezone()
+                if target_dt.tzinfo is None:
+                    target_dt = target_dt.replace(tzinfo=now.tzinfo)
+                if target_dt < now:
+                    return
+                trigger = DateTrigger(run_date=target_dt)
+                is_rec = False
+            except Exception:
+                return
+
+        if trigger:
+            msg = f"Momento de: {rem.title}"
+            try:
+                self._scheduler.add_job(
+                    _job_dispatch_callback,
+                    trigger=trigger,
+                    args=[rem.id, rem.title, msg, (rem.priority or "NORMAL").upper(), is_rec],
+                    id=job_id,
+                    name=rem.title,
+                    replace_existing=True
+                )
+                logger.info(f"[ReminderEngine] Job #{rem.id} ('{rem.title}') sincronizado en APScheduler.")
+            except Exception as e_add:
+                logger.warning(f"[ReminderEngine] Error agregando job #{rem.id} a APScheduler: {e_add}")
+
+    def remove_job_for_reminder(self, reminder_id: int):
+        """Remueve un job de APScheduler por ID de recordatorio."""
+        if not self._scheduler:
+            return
+        job_id = f"jarvis_reminder_{reminder_id}"
+        try:
+            if self._scheduler.get_job(job_id):
+                self._scheduler.remove_job(job_id)
+                logger.info(f"[ReminderEngine] Job #{reminder_id} removido de APScheduler.")
+        except Exception:
+            pass
+
+    def clear_all_jobs(self):
+        """Remueve todos los jobs del scheduler gestionados por JARVIS."""
+        if not self._scheduler:
+            return
+        try:
+            for job in self._scheduler.get_jobs():
+                if job.id.startswith("jarvis_reminder_"):
+                    self._scheduler.remove_job(job.id)
+            logger.info("[ReminderEngine] Todos los jobs de recordatorios removidos de APScheduler.")
+        except Exception:
+            pass
+
     def cancel_reminder(self, reminder_id: int) -> bool:
         """Cancela y remueve un recordatorio del planificador y la base de datos."""
-        job_id = f"jarvis_reminder_{reminder_id}"
-        if self._scheduler and self._scheduler.get_job(job_id):
-            try:
-                self._scheduler.remove_job(job_id)
-            except Exception:
-                pass
+        self.remove_job_for_reminder(reminder_id)
 
         db = SessionLocal()
         try:
@@ -394,3 +518,4 @@ class ReminderEngine:
 
 # Instancia singleton global
 reminder_engine = ReminderEngine()
+
