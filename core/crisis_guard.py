@@ -107,6 +107,20 @@ def normalize_crisis_text(text: str) -> str:
     return " ".join(cleaned.split())
 
 
+def is_media_entertainment_query(norm_text: str) -> bool:
+    """
+    Detecta si el mensaje es una búsqueda o reproducción de música, canciones o entretenimiento
+    donde palabras como 'triste' califican a la obra artística o canción y no expresan crisis autolítica del usuario.
+    """
+    media_patterns = [
+        r"\b(cancion|canciones|musica|track|tracks|rolas?|tema|temas|balada|baladas|melodia|melodias|playlist|album)\b.*\b(trist[a-z]*|melancol[a-z]*|desamor|llanto|llorar|dolor)\b",
+        r"\b(trist[a-z]*|melancol[a-z]*|desamor)\b.*\b(cancion|canciones|musica|track|tracks|rolas?|tema|temas|balada|baladas|melodia|melodias|playlist|album)\b",
+        r"\b(pon|reproduce|reproducir|play|toca|escucha|escuchar|oir|busca|buscar)\b.*\b(trist[a-z]*|melancol[a-z]*|desamor)\b",
+        r"\b(pelicula|peliculas|video|videos|libro|libros|poema|poemas|serie|series|anime)\b.*\b(trist[a-z]*|melancol[a-z]*)\b"
+    ]
+    return any(re.search(pat, norm_text) for pat in media_patterns)
+
+
 class CrisisSafetyGuard:
     """
     Guardián de Seguridad Relacional y Mitigación de Daños en Dos Capas.
@@ -237,7 +251,10 @@ class CrisisSafetyGuard:
         """
         Verifica si el texto normalizado contiene marcadores de afecto negativo, sufrimiento o fatiga.
         Si retorna False, el guardián omite completamente la Capa 2 para preservar cuota y latencia.
+        Excluye solicitudes de música o entretenimiento donde 'triste' califica una canción o pista.
         """
+        if is_media_entertainment_query(norm_text):
+            return False
         return any(pat.search(norm_text) for pat in self._NEGATIVE_AFFECT_PATTERNS)
 
     def is_calm_statement(self, norm_text: str) -> bool:

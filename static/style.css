@@ -2946,16 +2946,319 @@ body {
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--text-primary);
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #00F2FE !important;
+    text-shadow: 0 0 10px rgba(0, 242, 254, 0.45);
+}
+
+.msg-sender-tag .sender-name {
+    color: #00F2FE !important;
+    background: linear-gradient(135deg, #FFFFFF 0%, #D8F8FF 40%, #00F2FE 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.35));
 }
 
 .pulse-indicator {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: #00f2fe;
-    box-shadow: 0 0 8px #00f2fe;
+    background: #00f2fe !important;
+    box-shadow: 0 0 10px #00f2fe, 0 0 16px rgba(0, 242, 254, 0.6) !important;
+    animation: cyanPulseDot 2s ease-in-out infinite;
+}
+
+@keyframes cyanPulseDot {
+    0%, 100% { opacity: 0.8; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 14px #00f2fe, 0 0 22px rgba(0, 242, 254, 0.8); }
+}
+
+/* Ocultar selector de temas/atmósferas por requerimiento visual (menos botones, máxima estética) */
+#theme-selector-bar, #btn-open-themes {
+    display: none !important;
+}
+
+/* Rediseño de Logo Principal de Cabecera (Liquid Glass Cyber-Reactor) */
+.brand-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+}
+
+.brand-logo-emblem {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 12px rgba(0, 242, 254, 0.5));
+}
+
+.jarvis-cyber-core {
+    transform: translateZ(0);
+    animation: cyberHexPulse 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes cyberHexPulse {
+    0% { transform: scale(0.97) rotate(0deg); filter: drop-shadow(0 0 6px rgba(0, 242, 254, 0.35)); }
+    100% { transform: scale(1.03) rotate(2deg); filter: drop-shadow(0 0 18px rgba(0, 242, 254, 0.75)); }
+}
+
+.brand-logo-emblem .status-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    box-shadow: 0 0 8px #48A97A, 0 0 14px rgba(72, 169, 122, 0.6);
+}
+
+.brand-titles-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.brand-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 2.2px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #E0F8FF 40%, #00F2FE 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    filter: drop-shadow(0 0 16px rgba(0, 242, 254, 0.45));
+    margin: 0;
+    line-height: 1;
+}
+
+.brand-subline {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    color: rgba(0, 242, 254, 0.65);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* Tarjetas de Acción de Chat en Liquid Glass Puro (Cero Café / Cero Naranja) */
+.chat-action-card {
+    background: rgba(8, 22, 38, 0.78) !important;
+    border: 1px solid rgba(0, 242, 254, 0.22) !important;
+    border-top: 1px solid rgba(0, 242, 254, 0.48) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 242, 254, 0.1) !important;
+    border-radius: 18px !important;
+    padding: 14px 18px !important;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.chat-action-card.confirmation {
+    background: rgba(40, 12, 18, 0.75) !important;
+    border-color: rgba(220, 60, 60, 0.45) !important;
+}
+
+.chat-action-icon {
+    color: #00F2FE !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-action-label, .chat-action-title {
+    color: #F0F8FF !important;
+    font-family: var(--font-heading);
+    font-size: 13.5px;
+    font-weight: 700;
+}
+
+.chat-action-desc {
+    color: #92B8D4 !important;
+}
+
+.chat-action-btn {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.22), rgba(0, 136, 255, 0.32)) !important;
+    border: 1px solid rgba(0, 242, 254, 0.45) !important;
+    color: #00F2FE !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    padding: 10px 20px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(0, 242, 254, 0.18) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.chat-action-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.42), rgba(0, 136, 255, 0.55)) !important;
+    color: #FFFFFF !important;
+    border-color: rgba(0, 242, 254, 0.85) !important;
+    box-shadow: 0 0 24px rgba(0, 242, 254, 0.5) !important;
+    transform: translateY(-1px) scale(1.02);
+}
+
+.chat-confirm-btn {
+    background: var(--action-destructive, #B83A2E) !important;
+    color: var(--action-destructive-text, #FFFFFF) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 4px 16px rgba(184, 58, 46, 0.45) !important;
+}
+
+.chat-cancel-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #92B8D4 !important;
+}
+
+/* Rediseño del Logo del Apartado Musical en Liquid Glass */
+.studio-badge-icon {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(0, 136, 255, 0.35)) !important;
+    border: 1px solid rgba(0, 242, 254, 0.5) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #00F2FE !important;
+    box-shadow: 0 0 24px rgba(0, 242, 254, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+.music-core-svg line:nth-child(2) { animation: eqBarPulse 1.2s ease-in-out infinite alternate; }
+.music-core-svg line:nth-child(3) { animation: eqBarPulse 0.9s ease-in-out infinite alternate 0.2s; }
+.music-core-svg line:nth-child(4) { animation: eqBarPulse 1.4s ease-in-out infinite alternate 0.4s; }
+.music-core-svg line:nth-child(5) { animation: eqBarPulse 1.0s ease-in-out infinite alternate 0.1s; }
+
+@keyframes eqBarPulse {
+    0% { stroke-dasharray: 2 10; stroke-dashoffset: 2; opacity: 0.6; }
+    100% { stroke-dasharray: 14 0; stroke-dashoffset: 0; opacity: 1; }
+}
+
+/* Modal y Reproductor Musical con Color Adaptativo y Difuminado */
+.music-studio-card.liquid-glass-panel {
+    background: rgba(4, 12, 22, 0.88) !important;
+    border: 1px solid rgba(0, 242, 254, 0.25) !important;
+    border-top: 1px solid rgba(0, 242, 254, 0.52) !important;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.75), 0 0 45px rgba(0, 242, 254, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.studio-player-card {
+    background: rgba(6, 18, 34, 0.78) !important;
+    border: 1px solid rgba(0, 242, 254, 0.25) !important;
+    border-top: 1px solid rgba(0, 242, 254, 0.45) !important;
+}
+
+.studio-vinyl-disc {
+    background: radial-gradient(circle, #00F2FE 12%, rgba(0, 136, 255, 0.6) 18%, #0A192F 24%, #030A14 55%, #010408 80%) !important;
+    border: 2px solid rgba(0, 242, 254, 0.45) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.3) !important;
+}
+
+.vinyl-center-dot {
+    background: linear-gradient(135deg, #00F2FE, #0088FF) !important;
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.8) !important;
+}
+
+.studio-play-circle-btn {
+    background: linear-gradient(135deg, #00F2FE 0%, #0088FF 100%) !important;
+    color: #020B14 !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 0 22px rgba(0, 242, 254, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.studio-progress-fill {
+    background: linear-gradient(90deg, #00F2FE, #0088FF) !important;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.6) !important;
+}
+
+.studio-genre-badge {
+    background: rgba(0, 242, 254, 0.12) !important;
+    border: 1px solid rgba(0, 242, 254, 0.3) !important;
+    color: #00F2FE !important;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.15) !important;
+}
+
+.playlist-card-item {
+    background: rgba(8, 22, 38, 0.65) !important;
+    border: 1px solid rgba(0, 242, 254, 0.18) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+.playlist-card-item:hover, .playlist-card-item.active {
+    background: rgba(0, 242, 254, 0.14) !important;
+    border-color: rgba(0, 242, 254, 0.55) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.25) !important;
+}
+
+.ambient-mix-card {
+    background: rgba(8, 22, 38, 0.65) !important;
+    border: 1px solid rgba(0, 242, 254, 0.18) !important;
+}
+
+.studio-tab-btn.active {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(0, 136, 255, 0.35)) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(0, 242, 254, 0.45) !important;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3) !important;
+}
+
+/* Drawers Laterales (Memoria & Contexto/Ajustes) en Liquid Glass */
+.memory-drawer, .context-drawer {
+    background: rgba(4, 12, 22, 0.92) !important;
+    backdrop-filter: blur(36px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(180%) !important;
+    border: 1px solid rgba(0, 242, 254, 0.22) !important;
+    border-left: 1px solid rgba(0, 242, 254, 0.5) !important;
+    box-shadow: -12px 0 45px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 242, 254, 0.08) !important;
+}
+
+.drawer-header h3 {
+    color: #F0F8FF !important;
+}
+
+.mem-cat-btn {
+    background: rgba(0, 242, 254, 0.06) !important;
+    border: 1px solid rgba(0, 242, 254, 0.2) !important;
+    color: #92B8D4 !important;
+}
+
+.mem-cat-btn.active, .mem-cat-btn:hover {
+    background: rgba(0, 242, 254, 0.2) !important;
+    border-color: rgba(0, 242, 254, 0.6) !important;
+    color: #00F2FE !important;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3) !important;
+}
+
+.style-btn {
+    background: rgba(0, 242, 254, 0.06) !important;
+    border: 1px solid rgba(0, 242, 254, 0.2) !important;
+    color: #92B8D4 !important;
+}
+
+.style-btn:hover, .style-btn.active {
+    background: rgba(0, 242, 254, 0.2) !important;
+    border-color: rgba(0, 242, 254, 0.6) !important;
+    color: #00F2FE !important;
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3) !important;
+}
+
+.info-pill {
+    background: rgba(6, 18, 32, 0.7) !important;
+    border: 1px solid rgba(0, 242, 254, 0.18) !important;
+}
+
+.pill-val {
+    color: #00F2FE !important;
 }
 

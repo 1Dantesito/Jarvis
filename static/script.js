@@ -79,9 +79,8 @@ function initBobaCanvas() {
         ctx.shadowBlur = 0;
 
         // 3. Rejilla de Perspectiva 3D Animus (Suelo del Vacío)
-        const voiceState = (typeof window.currentVoiceState !== 'undefined') ? window.currentVoiceState : "IDLE";
-        const isSpeaking = voiceState === "SPEAKING";
-        const isListening = voiceState === "LISTENING";
+        const isSpeaking = (window.currentVoiceState === "SPEAKING" || window.isPlayingTTSQueue === true || window.isSpeakingAudio === true);
+        const isListening = (window.currentVoiceState === "LISTENING");
 
         // Líneas de perspectiva en fuga hacia el centro del horizonte
         ctx.lineWidth = 0.75;
@@ -108,20 +107,85 @@ function initBobaCanvas() {
             ctx.stroke();
         }
 
-        // 4. Membrana Neuronal Ondulante Reactiva a la Voz de JARVIS
-        const waveAmp = isSpeaking ? 16 : (isListening ? 9 : 3.5);
+        // 4. Membrana Neuronal y Cuerdas Vocales Cuánticas Reactivas a la Voz de JARVIS
+        const targetAmp = isSpeaking ? 34.0 : (isListening ? 12.0 : 3.5);
+        if (typeof window._jarvisVoiceAmp === 'undefined') window._jarvisVoiceAmp = 3.5;
+        window._jarvisVoiceAmp += (targetAmp - window._jarvisVoiceAmp) * 0.12;
+        const vAmp = window._jarvisVoiceAmp;
+        const vSpeed = isSpeaking ? 4.5 : (isListening ? 2.4 : 1.2);
+
+        // Cuerda 3: Resonancia de Sub-frecuencia (Azul Zafiro Profundo)
         ctx.beginPath();
         ctx.moveTo(0, horizonY);
-        for (let x = 0; x <= width; x += 20) {
-            const wave = Math.sin(x * 0.007 + time * 1.8) * waveAmp + Math.cos(x * 0.015 - time * 1.1) * (waveAmp * 0.6);
-            ctx.lineTo(x, horizonY + wave);
+        for (let x = 0; x <= width; x += 15) {
+            const subW = Math.sin(x * 0.005 + time * (vSpeed * 0.8)) * (vAmp * 0.85) +
+                         Math.cos(x * 0.012 - time * (vSpeed * 0.6)) * (vAmp * 0.4);
+            ctx.lineTo(x, horizonY + subW);
         }
-        ctx.strokeStyle = isSpeaking ? 'rgba(0, 242, 254, 0.7)' : 'rgba(0, 242, 254, 0.22)';
-        ctx.lineWidth = isSpeaking ? 2 : 1;
-        ctx.shadowBlur = isSpeaking ? 14 : 6;
-        ctx.shadowColor = 'rgba(0, 242, 254, 0.7)';
+        ctx.strokeStyle = isSpeaking ? 'rgba(0, 136, 255, 0.75)' : 'rgba(0, 136, 255, 0.20)';
+        ctx.lineWidth = isSpeaking ? 2.2 : 0.9;
+        ctx.shadowBlur = isSpeaking ? 16 : 4;
+        ctx.shadowColor = 'rgba(0, 136, 255, 0.8)';
         ctx.stroke();
         ctx.shadowBlur = 0;
+
+        // Cuerda 2: Armónico Medio (Turquesa Eléctrico)
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        for (let x = 0; x <= width; x += 12) {
+            const midW = Math.sin(x * 0.011 - time * (vSpeed * 1.1)) * (vAmp * 0.7) +
+                         Math.sin(x * 0.024 + time * vSpeed) * (vAmp * 0.35);
+            ctx.lineTo(x, horizonY + midW);
+        }
+        ctx.strokeStyle = isSpeaking ? 'rgba(56, 225, 255, 0.85)' : 'rgba(56, 225, 255, 0.25)';
+        ctx.lineWidth = isSpeaking ? 1.8 : 0.8;
+        ctx.shadowBlur = isSpeaking ? 14 : 5;
+        ctx.shadowColor = 'rgba(56, 225, 255, 0.7)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Cuerda 1: Cuerda Vocal Principal (Cian Neón Puro)
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        const nodePoints = [];
+        for (let x = 0; x <= width; x += 10) {
+            const mainW = Math.sin(x * 0.008 + time * vSpeed) * vAmp +
+                          Math.cos(x * 0.018 - time * (vSpeed * 1.3)) * (vAmp * 0.45) +
+                          Math.sin(x * 0.035 + time * (vSpeed * 1.8)) * (vAmp * 0.2);
+            const yPt = horizonY + mainW;
+            ctx.lineTo(x, yPt);
+            if (x > 0 && x < width && x % Math.floor(width / 8) < 10) {
+                nodePoints.push({ x, y: yPt });
+            }
+        }
+        ctx.strokeStyle = isSpeaking ? 'rgba(0, 242, 254, 0.95)' : 'rgba(0, 242, 254, 0.35)';
+        ctx.lineWidth = isSpeaking ? 2.6 : 1.2;
+        ctx.shadowBlur = isSpeaking ? 22 : 8;
+        ctx.shadowColor = 'rgba(0, 242, 254, 0.9)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Cuerda 4: Shimmer de Alta Frecuencia (Cobalto Resonante)
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        for (let x = 0; x <= width; x += 12) {
+            const shimW = Math.sin(x * 0.028 + time * (vSpeed * 1.7)) * (vAmp * 0.35);
+            ctx.lineTo(x, horizonY + shimW);
+        }
+        ctx.strokeStyle = isSpeaking ? 'rgba(79, 172, 254, 0.75)' : 'rgba(79, 172, 254, 0.15)';
+        ctx.lineWidth = isSpeaking ? 1.2 : 0.6;
+        ctx.stroke();
+
+        // Nodos Cuánticos Luminosos en la cuerda principal
+        for (const pt of nodePoints) {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, isSpeaking ? 3.5 : 1.8, 0, Math.PI * 2);
+            ctx.fillStyle = isSpeaking ? '#FFFFFF' : 'rgba(0, 242, 254, 0.6)';
+            ctx.shadowBlur = isSpeaking ? 16 : 6;
+            ctx.shadowColor = '#00F2FE';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
 
         // 5. Partículas de Bruma y Motes de Datos Animus (Ember Motes)
         for (const p of particles) {
@@ -428,25 +492,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (ttsAudioQueue.length === 0) {
             isPlayingTTSQueue = false;
+            window.isPlayingTTSQueue = false;
+            window.isSpeakingAudio = false;
             currentTTSAudio = null;
+            if (uiState.voiceState === "SPEAKING") {
+                setVoiceState("IDLE");
+            }
             return;
         }
 
         isPlayingTTSQueue = true;
+        window.isPlayingTTSQueue = true;
+        window.isSpeakingAudio = true;
+        setVoiceState("SPEAKING");
+
         const nextAudio = ttsAudioQueue.shift();
         currentTTSAudio = nextAudio;
 
         currentTTSAudio.onended = () => {
+            currentTTSAudio = null;
+            if (ttsAudioQueue.length === 0) {
+                isPlayingTTSQueue = false;
+                window.isPlayingTTSQueue = false;
+                window.isSpeakingAudio = false;
+                setVoiceState("IDLE");
+            }
             playNextTTSChunk();
         };
 
         currentTTSAudio.onerror = (e) => {
             console.warn("[TTS Chunk Error]", e);
+            currentTTSAudio = null;
+            if (ttsAudioQueue.length === 0) {
+                isPlayingTTSQueue = false;
+                window.isPlayingTTSQueue = false;
+                window.isSpeakingAudio = false;
+                setVoiceState("IDLE");
+            }
             playNextTTSChunk();
         };
 
         currentTTSAudio.play().catch(e => {
             console.warn("[TTS Play Error]", e);
+            currentTTSAudio = null;
+            if (ttsAudioQueue.length === 0) {
+                isPlayingTTSQueue = false;
+                window.isPlayingTTSQueue = false;
+                window.isSpeakingAudio = false;
+                setVoiceState("IDLE");
+            }
             playNextTTSChunk();
         });
     }
@@ -461,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         ttsAudioQueue.length = 0;
         isPlayingTTSQueue = false;
+        window.isPlayingTTSQueue = false;
+        window.isSpeakingAudio = false;
         if (currentTTSAudio) {
             try {
                 currentTTSAudio.pause();
@@ -468,6 +564,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentTTSAudio.load();
             } catch (e) {}
             currentTTSAudio = null;
+        }
+        if (uiState.voiceState === "SPEAKING") {
+            setVoiceState("IDLE");
         }
     }
 
@@ -841,10 +940,13 @@ document.addEventListener('DOMContentLoaded', () => {
             alarmItem.innerHTML = `
                 <div class="chat-bubble assistant-bubble reminder-alarm-bubble">
                     <div class="msg-header">
-                        <span class="assistant-label" style="display:inline-flex; align-items:center; gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> JARVIS</span>
-                        <span class="msg-time">${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
+                        <span class="msg-sender-tag">
+                            <span class="pulse-indicator"></span>
+                            <span class="sender-name">JARVIS</span>
+                        </span>
+                        <span class="msg-time-tag">${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
-                    <div class="msg-content"><span style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> <strong>${title}</strong></span><br>${message}</div>
+                    <div class="msg-content"><span style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00F2FE" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> <strong>${title}</strong></span><br>${message}</div>
                 </div>`;
             const chatContainer = document.getElementById('chat-messages');
             if (chatContainer) {
@@ -974,9 +1076,12 @@ document.addEventListener('DOMContentLoaded', () => {
             bubble.classList.add('bubble');
             const timeStr = getCurrentTimeStr();
             bubble.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-family:'Outfit',sans-serif; font-size:11px; font-weight:800; color:var(--accent-secondary); letter-spacing:0.8px; display:inline-flex; align-items:center; gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> JARVIS</span>
-                    <span style="font-size:10px; color:var(--text-muted); opacity:0.8;">${timeStr}</span>
+                <div class="msg-header">
+                    <span class="msg-sender-tag">
+                        <span class="pulse-indicator"></span>
+                        <span class="sender-name">JARVIS AI</span>
+                    </span>
+                    <span class="msg-time-tag">${timeStr}</span>
                 </div>
                 <div class="msg-content">Pensando...</div>
             `;
@@ -1185,7 +1290,10 @@ document.addEventListener('DOMContentLoaded', () => {
             imgCard.innerHTML = `
                 <img src="${generatedImage}" alt="Imagen generada por JARVIS">
                 <div class="generated-image-footer">
-                    <span>✨ Generada con IA</span>
+                    <span style="display:inline-flex; align-items:center; gap:5px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00F2FE" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Generada con IA
+                    </span>
                     <span style="opacity:0.8;">Guardada en Imágenes</span>
                 </div>
             `;
@@ -1195,9 +1303,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (generatedDoc && !parentItem.querySelector('.generated-doc-card')) {
             const docCard = document.createElement('div');
             docCard.className = 'generated-doc-card';
-            const icon = (generatedDoc.format === 'DOCX') ? '📝' : '📄';
+            const iconSvg = (generatedDoc.format === 'DOCX') 
+                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38E1FF" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+                : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5252" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13v4M9 15h2a1 1 0 0 0 0-2H9z"/></svg>`;
             docCard.innerHTML = `
-                <div class="generated-doc-icon">${icon}</div>
+                <div class="generated-doc-icon">${iconSvg}</div>
                 <div class="generated-doc-info">
                     <span class="generated-doc-title">${generatedDoc.file_name}</span>
                     <span class="generated-doc-meta">${generatedDoc.format} • ${generatedDoc.standard || 'APA'} • Guardado con éxito</span>
@@ -1327,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.add('confirmation');
             card.innerHTML = `
                 <div class="chat-action-card-header">
-                    <span class="chat-action-icon">⚠️</span>
+                    <span class="chat-action-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB300" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
                     <div>
                         <div class="chat-action-title">Confirmación Requerida</div>
                         <div class="chat-action-desc">${detail || 'Esta acción requiere tu confirmación para proceder de forma segura.'}</div>
@@ -1344,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.addEventListener('click', () => {
                     card.innerHTML = `
                         <div class="chat-action-card-header">
-                            <span class="chat-action-icon">⏳</span>
+                            <span class="chat-action-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00F2FE" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg></span>
                             <div class="chat-action-desc">Confirmación enviada. Procediendo...</div>
                         </div>
                     `;
@@ -1355,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cancelBtn.addEventListener('click', () => {
                     card.innerHTML = `
                         <div class="chat-action-card-header">
-                            <span class="chat-action-icon">🛑</span>
+                            <span class="chat-action-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF5252" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
                             <div class="chat-action-desc">Acción cancelada por el usuario.</div>
                         </div>
                     `;
@@ -1429,10 +1539,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (attachment && attachment.type === 'image' && attachment.preview) {
                 attachHtml = `<img src="${attachment.preview}" class="chat-attached-image" alt="Imagen adjunta">`;
             } else if (attachment && attachment.type === 'document') {
-                const icon = attachment.file_type === 'pdf' ? '📄' : (attachment.file_type === 'docx' ? '📝' : '📑');
+                const iconSvg = (attachment.file_type === 'pdf')
+                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5252" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13v4M9 15h2a1 1 0 0 0 0-2H9z"/></svg>`
+                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00F2FE" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
                 attachHtml = `
                     <div class="chat-attached-doc">
-                        <span class="chat-doc-icon">${icon}</span>
+                        <span class="chat-doc-icon">${iconSvg}</span>
                         <div class="chat-doc-info">
                             <span class="chat-doc-name">${attachment.name}</span>
                             <span class="chat-doc-meta">${formatFileSize(attachment.size_bytes)} • Documento analizado</span>

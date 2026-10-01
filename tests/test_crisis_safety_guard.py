@@ -418,3 +418,32 @@ async def test_circuit_breaker_recovery_half_open_to_closed():
     # 4. Verificar que el circuito quedó completamente CERRADO y con fallos en 0
     assert guard.circuit_consecutive_failures == 0
     assert guard.is_circuit_open() is False
+
+
+@pytest.mark.asyncio
+async def test_music_and_media_requests_with_sad_words_are_normal():
+    """
+    Verifica que solicitudes musicales o artísticas que usen términos como 'triste',
+    'desamor' o 'melancólica' para calificar canciones o playlists NUNCA disparen la alarma de crisis.
+    """
+    guard = CrisisSafetyGuard()
+    mock_p = MockAIProvider()
+
+    musical_queries = [
+        "mi rey pon la cancion mas triste de bellie",
+        "pon la canción más triste de Billie Eilish",
+        "reproduce música triste para relajarme",
+        "busca canciones tristes de desamor",
+        "quiero escuchar una balada triste",
+        "pon una rola melancólica",
+        "cuál es la canción más triste de Queen"
+    ]
+
+    for q in musical_queries:
+        guard.reset_state()
+        mock_p.calls_count = 0
+        decision = await guard.evaluate_message(q, mock_p)
+        assert decision.risk_level == CrisisRiskLevel.NORMAL, f"Falló para petición musical: {q}"
+        assert decision.is_interruptive is False
+        assert mock_p.calls_count == 0, f"No debió gastar LLM para petición musical: {q}"
+
