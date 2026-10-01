@@ -1,0 +1,37 @@
+# Entornos virtuales y dependencias
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Secretos y variables de entorno
+.env
+.env.*
+!.env.example
+
+# Bases de datos y almacenamiento de estado local / memoria
+*.db
+*.sqlite
+*.sqlite3
+memory_store.json
+
+# Cache de Python y pruebas
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Archivos de audio temporales
+static/audio/*.mp3
+
+# Logs
+*.log
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

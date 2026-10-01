@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RelationshipState",
+  "description": "Modelo de estado relacional continuo y memoria afectiva multiturno entre JARVIS y el usuario.",
+  "type": "object",
+  "required": [
+    "user_id",
+    "affinity_score",
+    "intimacy_level",
+    "total_interactions",
+    "first_interaction_at",
+    "last_interaction_at",
+    "current_affective_state",
+    "active_conversation_mode",
+    "ethical_boundaries"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Identificador único o canónico del usuario (ej. 'dante')."
+    },
+    "affinity_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 100.0,
+      "description": "Puntuación acumulativa de confianza, rapport y sintonía relacional."
+    },
+    "intimacy_level": {
+      "type": "string",
+      "enum": ["STRANGER", "ACQUAINTANCE", "COMPANION", "CLOSE_ALLY"],
+      "description": "Nivel cualitativo de cercanía interpersonal basado en historial e interacciones."
+    },
+    "total_interactions": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Contador acumulado de turnos conversacionales completos."
+    },
+    "first_interaction_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora ISO del primer contacto registrado."
+    },
+    "last_interaction_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora ISO de la interacción más reciente."
+    },
+    "current_affective_state": {
+      "type": "object",
+      "description": "Percepción del estado anímico y emocional del usuario en tiempo real.",
+      "required": ["valence", "arousal", "dominant_emotion", "confidence"],
+      "properties": {
+        "valence": {
+          "type": "number",
+          "minimum": -1.0,
+          "maximum": 1.0,
+          "description": "-1.0 indica aflicción/negatividad extrema; +1.0 alegría/satisfacción plena; 0.0 neutro."
+        },
+        "arousal": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Nivel de energía o agitación: 0.0 fatiga/calma; 1.0 alta urgencia/ansiedad/entusiasmo."
+        },
+        "dominant_emotion": {
+          "type": "string",
+          "enum": [
+            "NEUTRAL",
+            "TIRED",
+            "STRESSED",
+            "EXCITED",
+            "FOCUSED",
+            "VULNERABLE",
+            "FRUSTRATED",
+            "CURIOUS"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Nivel de certidumbre del diagnóstico afectivo."
+        },
+        "detected_triggers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Causas o eventos inductores detectados en el diálogo (ej. 'fatiga laboral')."
+        }
+      }
+    },
+    "active_conversation_mode": {
+      "type": "object",
+      "description": "Modo conversacional activo con inercia para evitar amnesia entre turnos.",
+      "required": ["current_mode", "turn_depth", "inertia"],
+      "properties": {
+        "current_mode": {
+          "type": "string",
+          "enum": [
+            "CASUAL",
+            "PRODUCTIVE",
+            "TECHNICAL",
+            "SERIOUS",
+            "ENTERTAINMENT",
+            "EMPATHETIC",
+            "URGENT",
+            "FEEDBACK"
+          ]
+        },
+        "turn_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número de turnos consecutivos transitados en este modo."
+        },
+        "inertia": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Resistencia a cambiar abruptamente de modo ante respuestas cortas (evita cortes de empatía)."
+        }
+      }
+    },
+    "relational_milestones": {
+      "type": "array",
+      "description": "Hitos compartidos (ej. cumpleaños celebrado, proyecto culminado, confidencias compartidas).",
+      "items": {
+        "type": "object",
+        "required": ["name", "achieved_at", "context"],
+        "properties": {
+          "name": { "type": "string" },
+          "achieved_at": { "type": "string", "format": "date-time" },
+          "context": { "type": "string" }
+        }
+      }
+    },
+    "sensitive_topics": {
+      "type": "array",
+      "description": "Temas delicados para el usuario que requieren prudencia y tono suave.",
+      "items": {
+        "type": "object",
+        "required": ["topic", "handling_directive"],
+        "properties": {
+          "topic": { "type": "string" },
+          "handling_directive": { "type": "string" }
+        }
+      }
+    },
+    "ethical_boundaries": {
+      "type": "object",
+      "description": "Límites éticos inviolables y protección psicológica activa (D.4).",
+      "required": [
+        "never_simulate_human_biology",
+        "never_substitute_professional_care",
+        "crisis_protocol_engaged"
+      ],
+      "properties": {
+        "never_simulate_human_biology": {
+          "type": "boolean",
+          "const": true,
+          "description": "JARVIS nunca fingirá tener cuerpo, emociones biológicas ni consciencia humana sintiente."
+        },
+        "never_substitute_professional_care": {
+          "type": "boolean",
+          "const": true,
+          "description": "JARVIS nunca actuará como psicólogo clínico, médico o asesor financiero definitivo."
+        },
+        "crisis_protocol_engaged": {
+          "type": "boolean",
+          "description": "Activado si se detecta riesgo de daño autolítico o emergencia vital, derivando a líneas profesionales."
+        },
+        "last_safety_intervention_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Momento de la última recomendación de apoyo profesional realizada."
+        }
+      }
+    }
+  }
+}

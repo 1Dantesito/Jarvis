@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>JARVIS — Compañero Inteligente</title>
+    
+    <!-- PWA & Mobile Configuration -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#141312">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JARVIS">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+
+    <!-- Fuentes Tipográficas Google Fonts: Outfit (Titulares) + Plus Jakarta Sans (Cuerpo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/static/style.css?v=900">
+</head>
+<body>
+    <!-- Fondos Orgánicos Ambientales Sutiles (Café Capibara / Arequipe / Caramelo) -->
+    <div class="ambient-blobs-layer" aria-hidden="true">
+        <div class="bg-blob blob-left"></div>
+        <div class="bg-blob blob-right"></div>
+        <div class="bg-blob blob-center"></div>
+    </div>
+
+    <!-- Canvas de Partículas Ligeras -->
+    <canvas id="boba-canvas" class="boba-canvas"></canvas>
+
+    <!-- Reproductor Oculto de YouTube IFrame -->
+    <div id="ytplayer-container" style="display:none; position:absolute; width:0; height:0; pointer-events:none;">
+        <div id="ytplayer"></div>
+    </div>
+
+    <div class="app-layout" id="app-layout">
+        <main class="main-container">
+            <!-- Header Superior de Lujo -->
+            <header class="app-header">
+                <div class="brand-area">
+                    <span class="status-dot online" id="status-dot"></span>
+                    <h1 class="brand-title">JARVIS</h1>
+                    <span class="version-tag" id="version-tag">v4.0</span>
+                    
+                    <div class="provider-dropdown-wrap">
+                        <button class="live-provider-badge" id="live-provider-badge" title="Motor de Inteligencia Artificial">
+                            ✨ <span id="provider-name-label">Gemini 3.7 Flash</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Píldoras de Acceso Rápido Superiores -->
+                <div class="header-pills">
+                    <button class="quick-nav-pill" id="btn-open-memory" title="Consultar Memoria Permanente">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+                        <span>Memoria</span>
+                        <span class="pill-count" id="memory-count-badge">15</span>
+                    </button>
+                    <button class="quick-nav-pill" id="btn-open-ambient" title="Generador de Sonidos Ambientales">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M20 12v8H4v-8"/><path d="M6 8l6-6 6 6"/><path d="M12 2v10"/></svg>
+                        <span>Ambiente</span>
+                    </button>
+                    <button class="icon-btn-pill" id="btn-open-themes" title="Cambiar Tono de Interfaz">
+                        🎨
+                    </button>
+                    <button class="icon-btn-pill" id="btn-toggle-drawer" title="Ajustes y Diagnóstico">
+                        ⚙️
+                    </button>
+                </div>
+
+                <!-- Mini Player Musical Integrado de Cabecera (oculto hasta que haya música) -->
+                <div id="mini-player" class="mini-player" title="Abrir Estudio Musical y Sonidos" style="display:none;">
+                    <div class="track-thumb" id="player-cover-wrap">
+                        <div class="vinyl-disc" id="vinyl-disc"></div>
+                        <span class="music-wave" id="music-wave"><span></span><span></span><span></span><span></span></span>
+                    </div>
+                    <div class="track-meta">
+                        <span class="track-title" id="player-track-title">—</span>
+                        <span class="track-artist" id="player-track-artist">—</span>
+                        <div class="track-progress-container" id="track-progress-container">
+                            <div class="track-progress-bar" id="player-progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="player-actions">
+                        <button class="player-ctrl-btn" id="btn-playpause" title="Pausar / Reanudar">▶</button>
+                        <button class="player-ctrl-btn" id="btn-next" title="Siguiente Pista">⏭</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Selector de Tonos / Atmósferas Desplegable -->
+            <div class="theme-selector-bar" id="theme-selector-bar" style="display:none;">
+                <span class="theme-label">Atmósfera:</span>
+                <button class="theme-chip active" data-theme="dark"><span class="color-dot" style="background:#D97736;"></span> Carbón Cálido (Noche)</button>
+                <button class="theme-chip" data-theme="light"><span class="color-dot" style="background:#C46424;"></span> Lino Crema (Día)</button>
+                <button class="theme-chip" data-theme="caramelo"><span class="color-dot" style="background:#E5A83B;"></span> Ámbar Dorado</button>
+                <button class="theme-chip" data-theme="moka"><span class="color-dot" style="background:#8D6E63;"></span> Espresso Moka</button>
+            </div>
+
+            <!-- Presencia Central / Orbe Reactivo de JARVIS -->
+            <div class="presence-container" id="presence-container">
+                <div class="aura-orb idle" id="jarvis-orb" role="button" tabindex="0" aria-label="Indicador interactivo de estado y voz de JARVIS">
+                    <div class="orb-halo" aria-hidden="true"></div>
+                    <div class="orb-ring ring-1" aria-hidden="true"></div>
+                    <div class="orb-ring ring-2" aria-hidden="true"></div>
+                    <div class="orb-core">
+                        <div class="orb-inner-center"></div>
+                    </div>
+                    <div class="orb-equalizer" id="orb-equalizer" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="voice-status-wrap">
+                    <div class="voice-status-text" id="voice-status-text">Listo (escuchando 'Jarvis'...)</div>
+                    <div class="handsfree-hint" id="handsfree-hint">🎙️ Manos Libres Activo</div>
+                </div>
+            </div>
+
+            <!-- Cuerpo de Chat y Conversación -->
+            <section class="chat-body" id="chat-body">
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="quick-prompts">
+                        <button class="prompt-chip" data-prompt="Reproduce BIRDS OF A FEATHER de Billie Eilish">
+                            <span>🎵 "BIRDS OF A FEATHER" by Billie Eilish</span>
+                        </button>
+                        <button class="prompt-chip" data-prompt="¿Qué sabes sobre mis gustos?">
+                            <span>ℹ️ ¿Qué sabes sobre mis gustos?</span>
+                        </button>
+                        <button class="prompt-chip" data-prompt="Sabías que me gusta mucho el juego de Devil May Cry 3 y 5">
+                            <span>🎮 Sabías que me gusta Devil May Cry 3 y 5</span>
+                        </button>
+                        <button class="prompt-chip" data-prompt="¿Qué tengo pendiente hoy?">
+                            <span>📋 ¿Qué tengo pendiente hoy?</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="messages-list" id="messages-list">
+                    <!-- Mensajes dinámicos -->
+                </div>
+            </section>
+
+            <!-- Footer / Cápsula Flotante de Entrada -->
+            <footer class="app-footer">
+                <div class="quick-prompts-bar">
+                    <button class="prompt-chip-sm" data-prompt="Reproduce WILDFLOWER de Billie Eilish">🎵 Reproduce WILDFLOWER de Billie Eilish</button>
+                    <button class="prompt-chip-sm" data-prompt="¿Qué sabes sobre mis gustos?">ℹ️ ¿Qué sabes sobre mis gustos?</button>
+                    <button class="prompt-chip-sm" data-prompt="Recomiéndame juegos estilo Devil May Cry">🎮 Recomiéndame juegos estilo Devil May Cry</button>
+                </div>
+
+                <div class="attachment-preview-container" id="attachment-preview-container" style="display:none;">
+                    <div class="attachment-chip">
+                        <span id="attachment-icon" style="font-size:16px; display:none;">📄</span>
+                        <img id="attachment-preview-img" src="" alt="Adjunto" style="display:none;">
+                        <span class="attachment-name" id="attachment-name-text">Archivo adjunto</span>
+                        <button type="button" class="attachment-remove-btn" id="attachment-remove-btn" title="Quitar adjunto">&times;</button>
+                    </div>
+                </div>
+
+                <form class="input-wrapper" id="chat-form">
+                    <button type="button" class="attach-btn" id="attach-img-btn" title="Adjuntar documento o imagen (PDF, DOCX, TXT, imágenes o Ctrl+V)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                        </svg>
+                    </button>
+                    <input type="file" id="image-file-input" accept="image/*,.pdf,.docx,.doc,.txt,.csv,.md,.json" style="display: none;">
+
+                    <button type="button" class="mic-btn" id="mic-btn" title="Hablar con JARVIS (Manos Libres Activo)">
+                        <div class="mic-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </div>
+                    </button>
+
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Siempre escuchando... Di 'Jarvis' o escribe aquí..." 
+                        autocomplete="off"
+                    >
+
+                    <button type="submit" class="send-btn" id="send-btn" title="Enviar Mensaje">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </form>
+                <div class="input-sub-hint">
+                    <span>Presiona Enter para enviar • Shift + Enter para salto de línea • Pega imágenes con Ctrl+V</span>
+                    <span>JARVIS v4.0 • Powered by Gemini AI</span>
+                </div>
+            </footer>
+        </main>
+
+        <!-- MODAL: ESTUDIO MUSICAL Y SONIDOS -->
+        <div class="music-studio-modal" id="music-studio-modal" style="display:none;">
+            <div class="music-studio-backdrop" id="music-studio-backdrop"></div>
+            <div class="music-studio-card">
+                <div class="music-studio-header">
+                    <div class="studio-title-area">
+                        <div class="studio-badge-icon">🎵</div>
+                        <div>
+                            <h3>Estudio Musical y Sonidos</h3>
+                            <p>Música de relajación y capas de ambiente</p>
+                        </div>
+                    </div>
+                    <button class="icon-btn sm close-modal-btn" id="btn-close-music-studio">✕</button>
+                </div>
+
+                <!-- Reproductor Activo Principal -->
+                <div class="studio-player-card">
+                    <div class="studio-vinyl-wrap">
+                        <div class="studio-vinyl-disc" id="studio-vinyl-disc">
+                            <div class="vinyl-center-dot"></div>
+                        </div>
+                    </div>
+                    <div class="studio-track-details">
+                        <span class="studio-genre-badge" id="studio-genre-badge">— SIN MÚSICA —</span>
+                        <h2 class="studio-main-title" id="studio-main-title">Ninguna canción</h2>
+                        <h4 class="studio-main-artist" id="studio-main-artist">Pide una canción a JARVIS</h4>
+                        
+                        <div class="studio-progress-wrap">
+                            <div class="studio-progress-bar-bg" id="studio-progress-bg">
+                                <div class="studio-progress-fill" id="studio-progress-fill"></div>
+                            </div>
+                            <div class="studio-time-labels">
+                                <span id="studio-time-current">0:00</span>
+                                <span id="studio-time-total">0:00</span>
+                            </div>
+                        </div>
+
+                        <div class="studio-controls-row">
+                            <button class="studio-ctrl-btn" id="studio-btn-prev" title="Anterior">⏮</button>
+                            <button class="studio-play-circle-btn" id="studio-btn-playpause" title="Reproducir / Pausar">▶</button>
+                            <button class="studio-ctrl-btn" id="studio-btn-next" title="Siguiente">⏭</button>
+                            
+                            <div class="studio-volume-wrap">
+                                <span class="vol-icon">🔊</span>
+                                <input type="range" class="studio-vol-slider" id="studio-vol-slider" min="0" max="100" value="80">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Reproducción Interactiva (Grid 2 Columnas) -->
+                <div class="studio-section-title">
+                    <h4>LISTA DE REPRODUCCIÓN</h4>
+                    <span class="queue-count-tag" id="queue-count-tag">0 pistas</span>
+                </div>
+                <div class="playlist-grid" id="playlist-grid">
+                    <!-- Canciones inyectadas dinámicamente -->
+                </div>
+
+                <!-- Mezclador de Ambiente -->
+                <div class="studio-section-title" style="margin-top:14px;">
+                    <h4>MEZCLADOR DE AMBIENTE (SINTETIZADOR PROCEDURAL)</h4>
+                    <span class="ambient-hint-tag">Combina con la música para máxima calma</span>
+                </div>
+                <div class="ambient-mixer-grid">
+                    <div class="ambient-mix-card">
+                        <div class="mix-card-top">
+                            <div class="mix-icon-wrap">🌧️</div>
+                            <span class="mix-title">Lluvia Serena</span>
+                            <button class="mix-mute-btn" data-sound="rain" title="Silenciar / Activar">🔈</button>
+                        </div>
+                        <input type="range" class="mix-slider" id="studio-rain-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="ambient-mix-card">
+                        <div class="mix-card-top">
+                            <div class="mix-icon-wrap">🌊</div>
+                            <span class="mix-title">Olas Suaves</span>
+                            <button class="mix-mute-btn" data-sound="waves" title="Silenciar / Activar">🔈</button>
+                        </div>
+                        <input type="range" class="mix-slider" id="studio-waves-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="ambient-mix-card">
+                        <div class="mix-card-top">
+                            <div class="mix-icon-wrap">☕</div>
+                            <span class="mix-title">Café Pastel</span>
+                            <button class="mix-mute-btn" data-sound="cafe" title="Silenciar / Activar">🔈</button>
+                        </div>
+                        <input type="range" class="mix-slider" id="studio-cafe-slider" min="0" max="100" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drawer Lateral de Memoria Permanente -->
+        <aside class="memory-drawer" id="memory-drawer">
+            <div class="drawer-header">
+                <h3>🧠 Memoria Permanente</h3>
+                <button class="icon-btn sm" id="btn-close-memory">✕</button>
+            </div>
+            <div class="memory-categories-nav">
+                <button class="mem-cat-btn active" data-cat="all">Todos</button>
+                <button class="mem-cat-btn" data-cat="gaming">#gaming</button>
+                <button class="mem-cat-btn" data-cat="music">#music</button>
+                <button class="mem-cat-btn" data-cat="preference">#preference</button>
+                <button class="mem-cat-btn" data-cat="lifestyle">#lifestyle</button>
+            </div>
+            <div class="memory-items-list" id="memory-items-list">
+                <!-- Inyectado dinámicamente -->
+            </div>
+        </aside>
+
+        <!-- Panel Lateral de Ajustes & Diagnóstico -->
+        <aside class="context-drawer" id="context-drawer">
+            <div class="drawer-header">
+                <h3>Ajustes & Diagnóstico</h3>
+                <button class="icon-btn sm" id="btn-close-drawer">✕</button>
+            </div>
+            <div class="drawer-content">
+                <div class="context-section">
+                    <h4>Sistema & Estado</h4>
+                    <div class="info-pill-grid">
+                        <div class="info-pill"><span class="pill-label">PC</span><span class="pill-val">Windows 11</span></div>
+                        <div class="info-pill"><span class="pill-label">Voz</span><span class="pill-val" id="pill-voice-state">BACKGROUND</span></div>
+                        <div class="info-pill"><span class="pill-label">Audio</span><span class="pill-val">Edge-TTS</span></div>
+                    </div>
+                </div>
+
+                <div class="context-section">
+                    <h4>Proveedor de IA Activo</h4>
+                    <div class="info-pill-grid" style="grid-template-columns: 1fr;">
+                        <div class="info-pill" style="text-align: left; padding: 8px 12px;">
+                            <span class="pill-label">Motor Principal</span>
+                            <span class="pill-val" id="pill-active-provider" style="color: var(--accent-primary);">Gemini 3.7 Flash</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="context-section">
+                    <h4>Ajustes Rápidos de Personalidad</h4>
+                    <div class="style-selector">
+                        <button class="style-btn" data-style="corto">Directo</button>
+                        <button class="style-btn" data-style="divertido">Con Chispa</button>
+                        <button class="style-btn" data-style="serio">Sobrio</button>
+                        <button class="style-btn" data-style="natural">Natural</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="/static/script.js?v=852"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('[ServiceWorker] Registrado:', reg.scope))
+                    .catch(err => console.debug('[ServiceWorker] Registro omitido o error:', err));
+            });
+        }
+    </script>
+</body>
+</html>
