@@ -21,6 +21,7 @@ class PlatformCapabilities:
         "open_file",
         "open_folder",
         "focus_application",
+        "close_window",
         "get_active_application",
         "get_running_applications",
         "analyze_screen",

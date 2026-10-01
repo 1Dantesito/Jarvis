@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/static/style.css?v=900">
+    <link rel="stylesheet" href="/static/style.css?v=liquid_glass_2">
 </head>
 <body>
     <!-- Fondos Orgánicos Ambientales Sutiles (Café Capibara / Arequipe / Caramelo) -->
@@ -40,7 +40,7 @@
 
     <div class="app-layout" id="app-layout">
         <main class="main-container">
-            <!-- Header Superior de Lujo -->
+            <!-- Header Superior de Lujo Liquid Glass -->
             <header class="app-header">
                 <div class="brand-area">
                     <span class="status-dot online" id="status-dot"></span>
@@ -48,33 +48,42 @@
                     <span class="version-tag" id="version-tag">v4.0</span>
                     
                     <div class="provider-dropdown-wrap">
-                        <button class="live-provider-badge" id="live-provider-badge" title="Motor de Inteligencia Artificial">
-                            ✨ <span id="provider-name-label">Gemini 3.7 Flash</span>
+                        <button class="live-provider-badge liquid-glass-pill" id="live-provider-badge" title="Motor de Inteligencia Artificial">
+                            <svg class="pill-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            </svg>
+                            <span id="provider-name-label">Gemini 3.7 Flash</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Píldoras de Acceso Rápido Superiores -->
+                <!-- Píldoras de Acceso Rápido Superiores (Liquid Glass) -->
                 <div class="header-pills">
-                    <button class="quick-nav-pill" id="btn-open-memory" title="Consultar Memoria Permanente">
+                    <button class="quick-nav-pill liquid-glass-pill" id="btn-open-memory" title="Consultar Memoria Permanente">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
                         <span>Memoria</span>
                         <span class="pill-count" id="memory-count-badge">15</span>
                     </button>
-                    <button class="quick-nav-pill" id="btn-open-ambient" title="Generador de Sonidos Ambientales">
+                    <button class="quick-nav-pill liquid-glass-pill" id="btn-open-ambient" title="Generador de Sonidos Ambientales">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M20 12v8H4v-8"/><path d="M6 8l6-6 6 6"/><path d="M12 2v10"/></svg>
                         <span>Ambiente</span>
                     </button>
-                    <button class="icon-btn-pill" id="btn-open-themes" title="Cambiar Tono de Interfaz">
-                        🎨
+                    <button class="icon-btn-pill liquid-glass-pill" id="btn-open-themes" title="Cambiar Atmósfera Visual">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 2a10 10 0 0 1 10 10c0 2.5-2 4.5-4.5 4.5h-1.5a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2 10 10 0 0 1-10-10A10 10 0 0 1 12 2z"></path>
+                        </svg>
                     </button>
-                    <button class="icon-btn-pill" id="btn-toggle-drawer" title="Ajustes y Diagnóstico">
-                        ⚙️
+                    <button class="icon-btn-pill liquid-glass-pill" id="btn-toggle-drawer" title="Ajustes y Diagnóstico">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
                     </button>
                 </div>
 
-                <!-- Mini Player Musical Integrado de Cabecera (oculto hasta que haya música) -->
-                <div id="mini-player" class="mini-player" title="Abrir Estudio Musical y Sonidos" style="display:none;">
+                <!-- Mini Player Musical Integrado de Cabecera (Liquid Glass) -->
+                <div id="mini-player" class="mini-player liquid-glass-player-mini" title="Abrir Estudio Musical y Letras" style="display:none;">
                     <div class="track-thumb" id="player-cover-wrap">
                         <div class="vinyl-disc" id="vinyl-disc"></div>
                         <span class="music-wave" id="music-wave"><span></span><span></span><span></span><span></span></span>
@@ -87,8 +96,12 @@
                         </div>
                     </div>
                     <div class="player-actions">
-                        <button class="player-ctrl-btn" id="btn-playpause" title="Pausar / Reanudar">▶</button>
-                        <button class="player-ctrl-btn" id="btn-next" title="Siguiente Pista">⏭</button>
+                        <button class="player-ctrl-btn" id="btn-playpause" title="Pausar / Reanudar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        </button>
+                        <button class="player-ctrl-btn" id="btn-next" title="Siguiente Pista">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"></line></svg>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -102,7 +115,7 @@
                 <button class="theme-chip" data-theme="moka"><span class="color-dot" style="background:#8D6E63;"></span> Espresso Moka</button>
             </div>
 
-            <!-- Presencia Central / Orbe Reactivo de JARVIS -->
+            <!-- Presencia Central / Membrana Neuronal y Orbe Reactivo de JARVIS -->
             <div class="presence-container" id="presence-container">
                 <div class="aura-orb idle" id="jarvis-orb" role="button" tabindex="0" aria-label="Indicador interactivo de estado y voz de JARVIS">
                     <div class="orb-halo" aria-hidden="true"></div>
@@ -117,7 +130,10 @@
                 </div>
                 <div class="voice-status-wrap">
                     <div class="voice-status-text" id="voice-status-text">Listo (escuchando 'Jarvis'...)</div>
-                    <div class="handsfree-hint" id="handsfree-hint">🎙️ Manos Libres Activo</div>
+                    <div class="handsfree-hint" id="handsfree-hint">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        <span>Manos Libres Activo</span>
+                    </div>
                 </div>
             </div>
 
@@ -126,16 +142,20 @@
                 <div class="welcome-screen" id="welcome-screen">
                     <div class="quick-prompts">
                         <button class="prompt-chip" data-prompt="Reproduce BIRDS OF A FEATHER de Billie Eilish">
-                            <span>🎵 "BIRDS OF A FEATHER" by Billie Eilish</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                            <span>"BIRDS OF A FEATHER" • Billie Eilish</span>
                         </button>
                         <button class="prompt-chip" data-prompt="¿Qué sabes sobre mis gustos?">
-                            <span>ℹ️ ¿Qué sabes sobre mis gustos?</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+                            <span>Memoria y Preferencias</span>
                         </button>
                         <button class="prompt-chip" data-prompt="Sabías que me gusta mucho el juego de Devil May Cry 3 y 5">
-                            <span>🎮 Sabías que me gusta Devil May Cry 3 y 5</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M8 10v4"/><circle cx="15" cy="11" r="1"/><circle cx="17" cy="13" r="1"/></svg>
+                            <span>Devil May Cry 3 & 5</span>
                         </button>
                         <button class="prompt-chip" data-prompt="¿Qué tengo pendiente hoy?">
-                            <span>📋 ¿Qué tengo pendiente hoy?</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span>Agenda y Pendientes</span>
                         </button>
                     </div>
                 </div>
@@ -145,17 +165,11 @@
                 </div>
             </section>
 
-            <!-- Footer / Cápsula Flotante de Entrada -->
+            <!-- Footer / Cápsula Flotante de Entrada Liquid Glass -->
             <footer class="app-footer">
-                <div class="quick-prompts-bar">
-                    <button class="prompt-chip-sm" data-prompt="Reproduce WILDFLOWER de Billie Eilish">🎵 Reproduce WILDFLOWER de Billie Eilish</button>
-                    <button class="prompt-chip-sm" data-prompt="¿Qué sabes sobre mis gustos?">ℹ️ ¿Qué sabes sobre mis gustos?</button>
-                    <button class="prompt-chip-sm" data-prompt="Recomiéndame juegos estilo Devil May Cry">🎮 Recomiéndame juegos estilo Devil May Cry</button>
-                </div>
-
                 <div class="attachment-preview-container" id="attachment-preview-container" style="display:none;">
                     <div class="attachment-chip">
-                        <span id="attachment-icon" style="font-size:16px; display:none;">📄</span>
+                        <span id="attachment-icon" style="display:none; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span>
                         <img id="attachment-preview-img" src="" alt="Adjunto" style="display:none;">
                         <span class="attachment-name" id="attachment-name-text">Archivo adjunto</span>
                         <button type="button" class="attachment-remove-btn" id="attachment-remove-btn" title="Quitar adjunto">&times;</button>
@@ -194,30 +208,133 @@
             </footer>
         </main>
 
-        <!-- MODAL: ESTUDIO MUSICAL Y SONIDOS -->
+        <!-- MODAL: ESTUDIO MUSICAL, LETRAS Y SONIDOS (LIQUID GLASS 2.0) -->
         <div class="music-studio-modal" id="music-studio-modal" style="display:none;">
             <div class="music-studio-backdrop" id="music-studio-backdrop"></div>
-            <div class="music-studio-card">
+            
+            <div class="music-studio-card liquid-glass-panel">
+                <!-- Capa de brillo difuso ambiental que adopta el color de la canción -->
+                <div class="studio-ambient-glow" id="studio-ambient-glow"></div>
+
+                <!-- Cabecera Superior del Estudio -->
                 <div class="music-studio-header">
                     <div class="studio-title-area">
-                        <div class="studio-badge-icon">🎵</div>
-                        <div>
-                            <h3>Estudio Musical y Sonidos</h3>
-                            <p>Música de relajación y capas de ambiente</p>
+                        <div class="studio-badge-icon" id="studio-badge-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                        </div>
+                        <div class="studio-head-titles">
+                            <h3>JARVIS Audio Studio</h3>
+                            <p id="studio-mode-subtitle">Liquid Glass & Letras Sincronizadas</p>
                         </div>
                     </div>
-                    <button class="icon-btn sm close-modal-btn" id="btn-close-music-studio">✕</button>
+
+                    <!-- Pestañas de Vista: Letras / Cola / Ambiente -->
+                    <div class="studio-tabs-bar">
+                        <button class="studio-tab-btn active" id="tab-lyrics-btn" title="Ver letra de la canción estilo Spotify">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <span>Letra</span>
+                        </button>
+                        <button class="studio-tab-btn" id="tab-queue-btn" title="Lista de reproducción y reordenamiento con el ratón">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            <span>Cola</span>
+                            <span class="queue-count-tag" id="queue-count-tag">0</span>
+                        </button>
+                        <button class="studio-tab-btn" id="tab-ambient-btn" title="Sintetizador de ruidos de relajación">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M20 12v8H4v-8"/><path d="M6 8l6-6 6 6"/><path d="M12 2v10"/></svg>
+                            <span>Ambiente</span>
+                        </button>
+                    </div>
+
+                    <button class="icon-btn sm close-modal-btn" id="btn-close-music-studio" title="Cerrar panel musical">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
 
-                <!-- Reproductor Activo Principal -->
-                <div class="studio-player-card">
+                <!-- SECCIÓN 1: VISTA DE LETRAS SINCRONIZADAS ESTILO SPOTIFY -->
+                <div class="studio-lyrics-view" id="studio-lyrics-view">
+                    <div class="lyrics-view-meta">
+                        <div class="lyrics-source-badge">
+                            <span class="lyrics-pulse-dot"></span>
+                            <span id="lyrics-source-text">LRCLIB Sync Live</span>
+                        </div>
+                        <div class="lyrics-current-track-name" id="lyrics-current-track-name">—</div>
+                    </div>
+                    <div class="studio-lyrics-container" id="studio-lyrics-container">
+                        <div class="lyrics-empty-state" id="lyrics-empty-state">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                            <p>Reproduce una canción para activar la sincronización inteligente de letra...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: VISTA DE COLA DE REPRODUCCIÓN (REORDENAMIENTO CON MOUSE) -->
+                <div class="studio-queue-view" id="studio-queue-view" style="display:none;">
+                    <div class="queue-header-info">
+                        <span class="queue-reorder-notice">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                            Arrastra y suelta canciones con el ratón para reposicionarlas en la lista
+                        </span>
+                    </div>
+                    <div class="playlist-grid" id="playlist-grid">
+                        <!-- Canciones inyectadas dinámicamente con drag & drop y botón remover -->
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: MEZCLADOR DE AMBIENTE PROCEDURAL -->
+                <div class="studio-ambient-view" id="studio-ambient-view" style="display:none;">
+                    <div class="ambient-mixer-grid">
+                        <div class="ambient-mix-card liquid-glass-subcard">
+                            <div class="mix-card-top">
+                                <div class="mix-icon-wrap">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>
+                                </div>
+                                <span class="mix-title">Lluvia Serena</span>
+                                <button class="mix-mute-btn" data-sound="rain" title="Silenciar / Activar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                            </div>
+                            <input type="range" class="mix-slider" id="studio-rain-slider" min="0" max="100" value="0">
+                        </div>
+
+                        <div class="ambient-mix-card liquid-glass-subcard">
+                            <div class="mix-card-top">
+                                <div class="mix-icon-wrap">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c.6 0 1.2-.2 1.7-.6 1-.8 2.6-.8 3.6 0 1 .8 2.6.8 3.6 0 1-.8 2.6-.8 3.6 0 1 .8 2.6.8 3.6 0 .5.4 1.1.6 1.7.6M2 18c.6 0 1.2-.2 1.7-.6 1-.8 2.6-.8 3.6 0 1 .8 2.6.8 3.6 0 1-.8 2.6-.8 3.6 0 1 .8 2.6.8 3.6 0 .5.4 1.1.6 1.7.6"/></svg>
+                                </div>
+                                <span class="mix-title">Olas Suaves</span>
+                                <button class="mix-mute-btn" data-sound="waves" title="Silenciar / Activar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                            </div>
+                            <input type="range" class="mix-slider" id="studio-waves-slider" min="0" max="100" value="0">
+                        </div>
+
+                        <div class="ambient-mix-card liquid-glass-subcard">
+                            <div class="mix-card-top">
+                                <div class="mix-icon-wrap">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
+                                </div>
+                                <span class="mix-title">Café Cálido</span>
+                                <button class="mix-mute-btn" data-sound="cafe" title="Silenciar / Activar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                            </div>
+                            <input type="range" class="mix-slider" id="studio-cafe-slider" min="0" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPRODUCTOR ACTIVO PRINCIPAL INFERIOR (LIQUID GLASS) -->
+                <div class="studio-player-card liquid-glass-subcard">
                     <div class="studio-vinyl-wrap">
                         <div class="studio-vinyl-disc" id="studio-vinyl-disc">
                             <div class="vinyl-center-dot"></div>
                         </div>
                     </div>
                     <div class="studio-track-details">
-                        <span class="studio-genre-badge" id="studio-genre-badge">— SIN MÚSICA —</span>
+                        <div class="studio-track-topline">
+                            <span class="studio-genre-badge" id="studio-genre-badge">— SIN MÚSICA —</span>
+                        </div>
                         <h2 class="studio-main-title" id="studio-main-title">Ninguna canción</h2>
                         <h4 class="studio-main-artist" id="studio-main-artist">Pide una canción a JARVIS</h4>
                         
@@ -232,58 +349,23 @@
                         </div>
 
                         <div class="studio-controls-row">
-                            <button class="studio-ctrl-btn" id="studio-btn-prev" title="Anterior">⏮</button>
-                            <button class="studio-play-circle-btn" id="studio-btn-playpause" title="Reproducir / Pausar">▶</button>
-                            <button class="studio-ctrl-btn" id="studio-btn-next" title="Siguiente">⏭</button>
+                            <button class="studio-ctrl-btn" id="studio-btn-prev" title="Pista Anterior">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="4" x2="5" y2="20" stroke="currentColor" stroke-width="2.5"></line></svg>
+                            </button>
+                            <button class="studio-play-circle-btn liquid-glass-play-circle" id="studio-btn-playpause" title="Reproducir / Pausar">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            </button>
+                            <button class="studio-ctrl-btn" id="studio-btn-next" title="Pista Siguiente">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="4" x2="19" y2="20" stroke="currentColor" stroke-width="2.5"></line></svg>
+                            </button>
                             
                             <div class="studio-volume-wrap">
-                                <span class="vol-icon">🔊</span>
+                                <span class="vol-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </span>
                                 <input type="range" class="studio-vol-slider" id="studio-vol-slider" min="0" max="100" value="80">
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Lista de Reproducción Interactiva (Grid 2 Columnas) -->
-                <div class="studio-section-title">
-                    <h4>LISTA DE REPRODUCCIÓN</h4>
-                    <span class="queue-count-tag" id="queue-count-tag">0 pistas</span>
-                </div>
-                <div class="playlist-grid" id="playlist-grid">
-                    <!-- Canciones inyectadas dinámicamente -->
-                </div>
-
-                <!-- Mezclador de Ambiente -->
-                <div class="studio-section-title" style="margin-top:14px;">
-                    <h4>MEZCLADOR DE AMBIENTE (SINTETIZADOR PROCEDURAL)</h4>
-                    <span class="ambient-hint-tag">Combina con la música para máxima calma</span>
-                </div>
-                <div class="ambient-mixer-grid">
-                    <div class="ambient-mix-card">
-                        <div class="mix-card-top">
-                            <div class="mix-icon-wrap">🌧️</div>
-                            <span class="mix-title">Lluvia Serena</span>
-                            <button class="mix-mute-btn" data-sound="rain" title="Silenciar / Activar">🔈</button>
-                        </div>
-                        <input type="range" class="mix-slider" id="studio-rain-slider" min="0" max="100" value="0">
-                    </div>
-
-                    <div class="ambient-mix-card">
-                        <div class="mix-card-top">
-                            <div class="mix-icon-wrap">🌊</div>
-                            <span class="mix-title">Olas Suaves</span>
-                            <button class="mix-mute-btn" data-sound="waves" title="Silenciar / Activar">🔈</button>
-                        </div>
-                        <input type="range" class="mix-slider" id="studio-waves-slider" min="0" max="100" value="0">
-                    </div>
-
-                    <div class="ambient-mix-card">
-                        <div class="mix-card-top">
-                            <div class="mix-icon-wrap">☕</div>
-                            <span class="mix-title">Café Pastel</span>
-                            <button class="mix-mute-btn" data-sound="cafe" title="Silenciar / Activar">🔈</button>
-                        </div>
-                        <input type="range" class="mix-slider" id="studio-cafe-slider" min="0" max="100" value="0">
                     </div>
                 </div>
             </div>
@@ -292,7 +374,10 @@
         <!-- Drawer Lateral de Memoria Permanente -->
         <aside class="memory-drawer" id="memory-drawer">
             <div class="drawer-header">
-                <h3>🧠 Memoria Permanente</h3>
+                <h3>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+                    <span>Memoria Permanente</span>
+                </h3>
                 <button class="icon-btn sm" id="btn-close-memory">✕</button>
             </div>
             <div class="memory-categories-nav">
@@ -348,7 +433,7 @@
 
     <!-- Scripts -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="/static/script.js?v=852"></script>
+    <script src="/static/script.js?v=liquid_glass_2"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

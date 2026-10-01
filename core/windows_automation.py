@@ -97,6 +97,55 @@ class ApplicationRegistry:
             "fallback_paths": [
                 os.path.expandvars(r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe")
             ]
+        },
+        "opera": {
+            "name": "Opera",
+            "executables": ["opera.exe", "launcher.exe"],
+            "process_names": ["opera.exe"],
+            "uri": None,
+            "fallback_paths": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\Opera GX\opera.exe"),
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\Opera\opera.exe"),
+                r"C:\Program Files\Opera\launcher.exe",
+                r"C:\Program Files\Opera GX\launcher.exe"
+            ]
+        },
+        "operagx": {
+            "name": "Opera GX",
+            "executables": ["opera.exe", "launcher.exe"],
+            "process_names": ["opera.exe"],
+            "uri": None,
+            "fallback_paths": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\Opera GX\opera.exe"),
+                r"C:\Program Files\Opera GX\launcher.exe"
+            ]
+        },
+        "brave": {
+            "name": "Brave",
+            "executables": ["brave.exe"],
+            "process_names": ["brave.exe"],
+            "uri": None,
+            "fallback_paths": [
+                r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+                os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe")
+            ]
+        },
+        "firefox": {
+            "name": "Mozilla Firefox",
+            "executables": ["firefox.exe"],
+            "process_names": ["firefox.exe"],
+            "uri": None,
+            "fallback_paths": [
+                r"C:\Program Files\Mozilla Firefox\firefox.exe",
+                r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
+            ]
+        },
+        "desktop": {
+            "name": "Escritorio",
+            "executables": ["explorer.exe"],
+            "process_names": ["explorer.exe"],
+            "uri": None,
+            "fallback_paths": [r"C:\Windows\explorer.exe"]
         }
     }
 
@@ -106,15 +155,31 @@ class ApplicationRegistry:
         "google": "chrome",
         "google chrome": "chrome",
         "microsoft edge": "edge",
+        "opera": "opera",
+        "opera gx": "operagx",
+        "operagx": "operagx",
+        "navegador opera": "opera",
+        "brave": "brave",
+        "firefox": "firefox",
+        "mozilla": "firefox",
+        "mozilla firefox": "firefox",
         "calculadora": "calc",
         "calculator": "calc",
         "bloc de notas": "notepad",
         "block de notas": "notepad",
         "editor de texto": "notepad",
         "explorador": "explorer",
+        "explorador de archivos": "explorer",
         "archivos": "explorer",
         "mis archivos": "explorer",
         "carpeta": "explorer",
+        "carpetas": "explorer",
+        "escritorio": "desktop",
+        "desktop": "desktop",
+        "pestaña del escritorio": "desktop",
+        "pestañas del escritorio": "desktop",
+        "pestanas del escritorio": "desktop",
+        "ventana del escritorio": "desktop",
         "consola": "cmd",
         "terminal": "cmd",
         "command prompt": "cmd",
@@ -228,6 +293,32 @@ class WindowsAutomationProvider:
                 "message": f"La aplicación '{app_name}' no está en la lista de aplicaciones seguras autorizadas."
             }
 
+        # Manejo especial para explorador y escritorio:
+        # explorer.exe siempre está activo en Windows como shell. Para abrir ventanas/pestañas de archivos o escritorio
+        # debemos invocar explorer.exe directamente en lugar de solo enfocar el proceso de fondo.
+        if canonical_key in ["explorer", "desktop"]:
+            try:
+                if canonical_key == "desktop":
+                    desktop_dir = SecurityPolicy.get_actual_user_dir("Desktop")
+                    subprocess.Popen(f'explorer.exe "{desktop_dir}"')
+                    msg = "Abriendo tu Escritorio en el Explorador de Windows."
+                else:
+                    subprocess.Popen("explorer.exe")
+                    msg = "Abriendo el Explorador de archivos."
+                return {
+                    "success": True,
+                    "status": "APP_OPENED",
+                    "app": app_info["name"],
+                    "message": msg
+                }
+            except Exception as e:
+                logger.error(f"[WindowsAutomation] Error abriendo {app_info['name']}: {e}")
+                return {
+                    "success": False,
+                    "status": "EXECUTION_FAILED",
+                    "message": f"No pude abrir {app_info['name']} ({e})."
+                }
+
         is_running, pid = cls.find_running_process(app_info)
         if is_running:
             cls.focus_application(canonical_key)
@@ -286,20 +377,21 @@ class WindowsAutomationProvider:
             }
 
         try:
+            from ctypes import wintypes
             user32 = ctypes.windll.user32
             found_hwnd = None
 
             def _enum_window_callback(hwnd, extra):
                 nonlocal found_hwnd
                 if user32.IsWindowVisible(hwnd):
-                    lpdw_process_id = ctypes.c_ulong()
+                    lpdw_process_id = wintypes.DWORD()
                     user32.GetWindowThreadProcessId(hwnd, ctypes.byref(lpdw_process_id))
                     if lpdw_process_id.value == pid:
                         found_hwnd = hwnd
                         return False
                 return True
 
-            WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+            WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
             user32.EnumWindows(WNDENUMPROC(_enum_window_callback), 0)
 
             if found_hwnd:
@@ -323,9 +415,94 @@ class WindowsAutomationProvider:
         }
 
     @classmethod
-    def close_application(cls, app_name: str) -> Dict[str, Any]:
+    def close_window(cls, window_title: Optional[str] = None, app_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Cierra una ventana específica abierta en el escritorio por coincidencia de título y/o proceso.
+        Usa WM_CLOSE (0x0010) para un cierre limpio y controlado.
+        """
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+        WM_CLOSE = 0x0010
+
+        target_pids = set()
+        target_app_display = None
+
+        if app_name:
+            canonical_key, app_info = ApplicationRegistry.resolve_app(app_name)
+            if app_info:
+                target_app_display = app_info["name"]
+                proc_names = [p.lower() for p in app_info.get("process_names", [])]
+                for p in psutil.process_iter(["pid", "name"]):
+                    try:
+                        p_name = p.info.get("name", "")
+                        if p_name and p_name.lower() in proc_names:
+                            target_pids.add(p.info["pid"])
+                    except Exception:
+                        pass
+            else:
+                if not window_title:
+                    window_title = app_name
+
+        matching_hwnds = []
+
+        def _enum_close_callback(hwnd, extra):
+            if user32.IsWindowVisible(hwnd):
+                buf = ctypes.create_unicode_buffer(512)
+                user32.GetWindowTextW(hwnd, buf, 512)
+                title = buf.value.strip()
+                if title:
+                    pid = wintypes.DWORD()
+                    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+
+                    if target_pids and pid.value not in target_pids:
+                        return True
+
+                    if window_title:
+                        if window_title.lower() in title.lower():
+                            matching_hwnds.append((hwnd, title, pid.value))
+                    elif target_pids:
+                        matching_hwnds.append((hwnd, title, pid.value))
+            return True
+
+        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        user32.EnumWindows(WNDENUMPROC(_enum_close_callback), 0)
+
+        if not matching_hwnds:
+            desc = f"con título '{window_title}'" if window_title else ""
+            if target_app_display:
+                desc += f" de {target_app_display}"
+            return {
+                "success": False,
+                "status": "WINDOW_NOT_FOUND",
+                "message": f"No encontré ninguna ventana abierta {desc.strip()}."
+            }
+
+        closed_titles = []
+        for hwnd, title, pid in matching_hwnds:
+            user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
+            closed_titles.append(title)
+
+        count = len(closed_titles)
+        msg = f"Cerrando la ventana '{closed_titles[0]}'." if count == 1 else f"Cerrando {count} ventanas coincidentes."
+
+        return {
+            "success": True,
+            "status": "WINDOW_CLOSED",
+            "windows_closed": count,
+            "closed_titles": closed_titles,
+            "message": msg
+        }
+
+    @classmethod
+    def close_application(cls, app_name: str, window_title: Optional[str] = None) -> Dict[str, Any]:
+        if window_title:
+            return cls.close_window(window_title=window_title, app_name=app_name)
+
         canonical_key, app_info = ApplicationRegistry.resolve_app(app_name)
         if not app_info:
+            win_res = cls.close_window(window_title=app_name)
+            if win_res.get("success"):
+                return win_res
             return {
                 "success": False,
                 "status": "APP_NOT_ALLOWED",
@@ -361,6 +538,9 @@ class WindowsAutomationProvider:
                     "message": f"Cerrando {app_info['name']}."
                 }
             else:
+                win_res = cls.close_window(app_name=app_name)
+                if win_res.get("success"):
+                    return win_res
                 return {
                     "success": False,
                     "status": "APP_NOT_RUNNING",

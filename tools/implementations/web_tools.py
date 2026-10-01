@@ -130,10 +130,48 @@ class ReadWebpageTool(BaseTool):
             "error": None
         }
 
+class SearchYouTubeTool(BaseTool):
+    name = "search_youtube"
+    description = (
+        "Abre una búsqueda en YouTube en el navegador con la consulta especificada (acción visual de escritorio). "
+        "Úsala SIEMPRE que el usuario pida buscar vídeos, música, tutoriales o cualquier contenido en YouTube "
+        "(ej. 'busca en youtube gatitos', 'pon en youtube rock', 'busca tutorial de python en youtube')."
+    )
+    tool_type = ToolType.ACTION
+    parameters_schema = {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "Término o frase de búsqueda en YouTube"}
+        },
+        "required": ["query"]
+    }
+
+    async def execute(self, query: str = None, **kwargs) -> Dict[str, Any]:
+        clean_query = (query or "").strip()
+        if not clean_query:
+            return {"success": False, "data": {}, "error": "No se especificó consulta para buscar en YouTube."}
+
+        # Quitar prefijos comunes como 'en youtube', 'buscar' si vienen pegados
+        clean_for_yt = re.sub(r'^(busca|buscar|pon|reproduce|ver)\s+(en\s+youtube\s+)?', '', clean_query, flags=re.IGNORECASE).strip()
+        clean_for_yt = re.sub(r'\s+en\s+youtube$', '', clean_for_yt, flags=re.IGNORECASE).strip()
+        effective_query = clean_for_yt or clean_query
+
+        search_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(effective_query)}"
+        webbrowser.open(search_url)
+        return {
+            "success": True,
+            "data": {
+                "query": effective_query,
+                "url": search_url,
+                "message": f"Buscando '{effective_query}' en YouTube."
+            },
+            "error": None
+        }
+
 class WebSearchTool(BaseTool):
     name = "web_search"
     description = (
-        "Abre una búsqueda en Google en el navegador predeterminado de Windows (acción visual de escritorio). "
+        "Abre una búsqueda en Google o YouTube en el navegador predeterminado de Windows (acción visual de escritorio). "
         "Usa esta herramienta cuando el usuario pida explícitamente abrir una búsqueda o ver resultados en el navegador. "
         "Para leer o resumir páginas web sin abrir ventanas, usa 'read_webpage'."
     )
@@ -141,20 +179,31 @@ class WebSearchTool(BaseTool):
     parameters_schema = {
         "type": "object",
         "properties": {
-            "query": {"type": "string", "description": "Término a buscar en Google"},
+            "query": {"type": "string", "description": "Término a buscar"},
+            "engine": {"type": "string", "enum": ["google", "youtube"], "default": "google", "description": "Motor de búsqueda ('google' o 'youtube')"},
             "url": {"type": "string", "description": "URL directa opcional a abrir"}
         },
         "required": []
     }
 
-    async def execute(self, query: str = None, url: str = None, **kwargs) -> Dict[str, Any]:
+    async def execute(self, query: str = None, engine: str = "google", url: str = None, **kwargs) -> Dict[str, Any]:
         if url:
             if not url.startswith(("http://", "https://")):
                 url = "https://" + url
             webbrowser.open(url)
             return {"success": True, "data": {"url": url, "message": f"Abriendo {url} en el navegador."}, "error": None}
         elif query:
-            search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
-            webbrowser.open(search_url)
-            return {"success": True, "data": {"query": query, "message": f"Buscando '{query}' en Google."}, "error": None}
+            clean_q = query.strip()
+            # Detección inteligente de búsqueda en YouTube
+            if engine == "youtube" or "youtube" in clean_q.lower():
+                clean_for_yt = re.sub(r'\b(en youtube|youtube)\b', '', clean_q, flags=re.IGNORECASE).strip()
+                target_q = clean_for_yt or clean_q
+                search_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(target_q)}"
+                webbrowser.open(search_url)
+                return {"success": True, "data": {"query": target_q, "engine": "youtube", "url": search_url, "message": f"Buscando '{target_q}' en YouTube."}, "error": None}
+            else:
+                search_url = f"https://www.google.com/search?q={urllib.parse.quote(clean_q)}"
+                webbrowser.open(search_url)
+                return {"success": True, "data": {"query": clean_q, "engine": "google", "url": search_url, "message": f"Buscando '{clean_q}' en Google."}, "error": None}
         return {"success": False, "data": {}, "error": "No se especificó consulta ni URL para buscar."}
+

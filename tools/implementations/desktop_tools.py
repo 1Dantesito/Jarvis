@@ -57,20 +57,53 @@ class FocusAppTool(BaseTool):
 
 class CloseAppTool(BaseTool):
     name = "close_application"
-    description = "Cierra de forma segura una aplicación autorizada en ejecución (Calculadora, Bloc de notas, Spotify, Chrome, etc.)."
+    description = "Cierra de forma segura una aplicación autorizada en ejecución (Calculadora, Bloc de notas, Spotify, Chrome, Opera, etc.) o una ventana específica."
     parameters_schema = {
         "type": "object",
         "properties": {
             "app_name": {
                 "type": "string",
-                "description": "Nombre de la aplicación autorizada a cerrar"
+                "description": "Nombre de la aplicación autorizada a cerrar (ej. 'Opera', 'Chrome', 'Spotify')"
+            },
+            "window_title": {
+                "type": "string",
+                "description": "Título o parte del título de la ventana específica a cerrar (opcional)"
             }
         },
         "required": ["app_name"]
     }
 
-    async def execute(self, app_name: str, **kwargs) -> Dict[str, Any]:
-        res = await asyncio.to_thread(WindowsAutomationProvider.close_application, app_name)
+    async def execute(self, app_name: str, window_title: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        res = await asyncio.to_thread(WindowsAutomationProvider.close_application, app_name, window_title=window_title)
+        return {
+            "success": res.get("success", False),
+            "data": res,
+            "error": res.get("message") if not res.get("success") else None
+        }
+
+class CloseWindowTool(BaseTool):
+    name = "close_window"
+    description = (
+        "Cierra una ventana específica abierta en el escritorio por su título o pestaña (ej. una ventana de Opera, YouTube, Chrome, o un documento específico). "
+        "Usa esta herramienta cuando el usuario pida cerrar una ventana en particular o cerrar tal pestaña/ventana."
+    )
+    parameters_schema = {
+        "type": "object",
+        "properties": {
+            "window_title": {
+                "type": "string",
+                "description": "Título o parte del título de la ventana a cerrar (ej. 'YouTube', 'GitHub', 'Opera', 'WhatsApp')"
+            },
+            "app_name": {
+                "type": "string",
+                "description": "Nombre opcional del navegador o aplicación (ej. 'Opera', 'Chrome', 'Edge')"
+            }
+        },
+        "required": []
+    }
+
+    async def execute(self, window_title: Optional[str] = None, app_name: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        res = await asyncio.to_thread(WindowsAutomationProvider.close_window, window_title=window_title, app_name=app_name)
         return {
             "success": res.get("success", False),
             "data": res,

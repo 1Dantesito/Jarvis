@@ -36,6 +36,7 @@ class SecurityPolicy:
         "open_application",
         "focus_application",
         "close_application",
+        "close_window",
         "open_url",
         "open_file",
         "open_folder",
@@ -89,6 +90,7 @@ class SecurityPolicy:
         # Web
         "read_webpage",
         "web_search",
+        "search_youtube",
         # Automatización y Workflows Multi-paso (Fase 18)
         "execute_workflow",
         "get_daily_briefing"

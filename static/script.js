@@ -2,7 +2,7 @@
 // JARVIS v3.0 — Continuous Hands-Free Engine, Real Voice & WebSockets
 // =========================================================================
 
-// --- BOBA / FLOATING BUBBLES CANVAS ENGINE ---
+// --- ANIMUS LOADING VOID & NEURAL 3D PERSPECTIVE ENGINE (AC Black Flag Aesthetic) ---
 function initBobaCanvas() {
     const canvas = document.getElementById('boba-canvas');
     if (!canvas) return;
@@ -16,60 +16,140 @@ function initBobaCanvas() {
         height = canvas.height = window.innerHeight;
     });
 
-    const bubbles = [];
-    const BUBBLE_COUNT = 16;
+    // 64 Partículas flotantes de bruma cibernética Animus Void
+    const particles = [];
+    const PARTICLE_COUNT = 64;
 
-    for (let i = 0; i < BUBBLE_COUNT; i++) {
-        const typeRoll = Math.random();
-        let hue, sat, light, alpha;
-        if (typeRoll < 0.4) {
-            hue = 348 + Math.random() * 10;
-            sat = 85;
-            light = 50;
-            alpha = Math.random() * 0.06 + 0.03;
-        } else if (typeRoll < 0.75) {
-            hue = 356 + Math.random() * 8;
-            sat = 90;
-            light = 45;
-            alpha = Math.random() * 0.05 + 0.02;
-        } else {
-            hue = 0 + Math.random() * 10;
-            sat = 80;
-            light = 38;
-            alpha = Math.random() * 0.07 + 0.03;
-        }
-
-        bubbles.push({
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            radius: Math.random() * 90 + 35,
-            vx: (Math.random() - 0.5) * 0.25,
-            vy: (Math.random() - 0.5) * 0.25,
-            hue, sat, light, alpha
+            size: Math.random() * 2.2 + 0.8,
+            speedY: Math.random() * 0.45 + 0.15,
+            swaySpeed: Math.random() * 0.02 + 0.008,
+            swayDistance: Math.random() * 32 + 10,
+            seed: Math.random() * 100,
+            baseAlpha: Math.random() * 0.45 + 0.15,
+            isDiamond: Math.random() > 0.75,
+            rotation: Math.random() * Math.PI,
+            rotSpeed: (Math.random() - 0.5) * 0.03
         });
     }
 
+    let time = 0;
+
     function animate() {
         ctx.clearRect(0, 0, width, height);
+        time += 0.02;
 
-        for (const b of bubbles) {
-            b.x += b.vx;
-            b.y += b.vy;
+        const horizonY = height * 0.63;
+        const centerX = width * 0.5;
 
-            if (b.x < -b.radius) b.x = width + b.radius;
-            if (b.x > width + b.radius) b.x = -b.radius;
-            if (b.y < -b.radius) b.y = height + b.radius;
-            if (b.y > height + b.radius) b.y = -b.radius;
+        // 1. Abismo y Atmósfera del Animus Void (Cian Profundo / Cyber Ocean)
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+        skyGrad.addColorStop(0, '#02050A');
+        skyGrad.addColorStop(0.65, '#030C16');
+        skyGrad.addColorStop(1, '#051A2C');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, width, horizonY);
 
-            const grad = ctx.createRadialGradient(b.x, b.y, b.radius * 0.1, b.x, b.y, b.radius);
-            grad.addColorStop(0, `hsla(${b.hue}, ${b.sat}%, ${b.light}%, ${b.alpha * 1.6})`);
-            grad.addColorStop(0.7, `hsla(${b.hue}, ${b.sat}%, ${b.light}%, ${b.alpha * 0.6})`);
-            grad.addColorStop(1, `hsla(${b.hue}, ${b.sat}%, ${b.light}%, 0)`);
+        const floorGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+        floorGrad.addColorStop(0, '#051A2C');
+        floorGrad.addColorStop(0.3, '#020C17');
+        floorGrad.addColorStop(1, '#010408');
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(0, horizonY, width, height - horizonY);
 
+        // 2. Resplandor Difuso y Línea de Horizonte Especular
+        const horizonGlow = ctx.createLinearGradient(0, horizonY - 45, 0, horizonY + 45);
+        horizonGlow.addColorStop(0, 'rgba(0, 242, 254, 0)');
+        horizonGlow.addColorStop(0.5, 'rgba(0, 242, 254, 0.16)');
+        horizonGlow.addColorStop(1, 'rgba(0, 242, 254, 0)');
+        ctx.fillStyle = horizonGlow;
+        ctx.fillRect(0, horizonY - 45, width, 90);
+
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(width, horizonY);
+        ctx.strokeStyle = 'rgba(0, 242, 254, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0, 242, 254, 0.75)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 3. Rejilla de Perspectiva 3D Animus (Suelo del Vacío)
+        const voiceState = (typeof window.currentVoiceState !== 'undefined') ? window.currentVoiceState : "IDLE";
+        const isSpeaking = voiceState === "SPEAKING";
+        const isListening = voiceState === "LISTENING";
+
+        // Líneas de perspectiva en fuga hacia el centro del horizonte
+        ctx.lineWidth = 0.75;
+        const lineCount = 18;
+        for (let i = -lineCount; i <= lineCount; i++) {
+            const spreadX = centerX + i * (width / (lineCount * 0.85));
             ctx.beginPath();
-            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-            ctx.fillStyle = grad;
-            ctx.fill();
+            ctx.moveTo(centerX, horizonY);
+            ctx.lineTo(spreadX, height);
+            const lineAlpha = Math.max(0, 0.11 - Math.abs(i) * 0.005);
+            ctx.strokeStyle = `rgba(0, 242, 254, ${lineAlpha})`;
+            ctx.stroke();
+        }
+
+        // Líneas horizontales de profundidad en perspectiva
+        for (let d = 1; d <= 8; d++) {
+            const progress = Math.pow(d / 8, 2.3);
+            const lineY = horizonY + progress * (height - horizonY);
+            const hAlpha = progress * 0.12;
+            ctx.beginPath();
+            ctx.moveTo(0, lineY);
+            ctx.lineTo(width, lineY);
+            ctx.strokeStyle = `rgba(0, 242, 254, ${hAlpha})`;
+            ctx.stroke();
+        }
+
+        // 4. Membrana Neuronal Ondulante Reactiva a la Voz de JARVIS
+        const waveAmp = isSpeaking ? 16 : (isListening ? 9 : 3.5);
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        for (let x = 0; x <= width; x += 20) {
+            const wave = Math.sin(x * 0.007 + time * 1.8) * waveAmp + Math.cos(x * 0.015 - time * 1.1) * (waveAmp * 0.6);
+            ctx.lineTo(x, horizonY + wave);
+        }
+        ctx.strokeStyle = isSpeaking ? 'rgba(0, 242, 254, 0.7)' : 'rgba(0, 242, 254, 0.22)';
+        ctx.lineWidth = isSpeaking ? 2 : 1;
+        ctx.shadowBlur = isSpeaking ? 14 : 6;
+        ctx.shadowColor = 'rgba(0, 242, 254, 0.7)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 5. Partículas de Bruma y Motes de Datos Animus (Ember Motes)
+        for (const p of particles) {
+            p.y -= p.speedY * (isSpeaking ? 1.3 : 1.0);
+            p.rotation += p.rotSpeed;
+            if (p.y < -15) {
+                p.y = height + 15;
+                p.x = Math.random() * width;
+            }
+            const currentX = p.x + Math.sin(time * p.swaySpeed + p.seed) * p.swayDistance;
+            const alpha = p.baseAlpha * (0.8 + 0.25 * Math.sin(time * 1.5 + p.seed));
+
+            ctx.save();
+            ctx.translate(currentX, p.y);
+            ctx.shadowBlur = isSpeaking ? 12 : 8;
+            ctx.shadowColor = 'rgba(0, 242, 254, 0.6)';
+
+            if (p.isDiamond) {
+                ctx.rotate(p.rotation);
+                ctx.fillStyle = `rgba(56, 225, 255, ${alpha * 0.9})`;
+                ctx.fillRect(-p.size, -p.size, p.size * 2, p.size * 2);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 242, 254, ${alpha})`;
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         requestAnimationFrame(animate);
@@ -233,9 +313,14 @@ function startProgressTracking() {
                     const sTot = Math.floor(duration % 60);
                     timeTot.textContent = `${mTot}:${sTot < 10 ? '0' : ''}${sTot}`;
                 }
+
+                // Sincronización inteligente de letras estilo Spotify
+                if (typeof syncLyricsWithTime === 'function') {
+                    syncLyricsWithTime(current);
+                }
             }
         }
-    }, 500);
+    }, 250);
 }
 
 function stopProgressTracking() {
@@ -257,6 +342,14 @@ function startTrackPlayback(videoId, title, artist) {
     if (playerTrackArtist) playerTrackArtist.textContent = artist || 'Música';
     if (studioTitle) studioTitle.textContent = title || 'Reproduciendo';
     if (studioArtist) studioArtist.textContent = artist || 'Música';
+
+    // Activar color dinámico de la canción y carga de letra sincronizada
+    if (typeof applyDynamicSongColor === 'function') {
+        applyDynamicSongColor(title, artist);
+    }
+    if (typeof fetchAndRenderLyrics === 'function') {
+        fetchAndRenderLyrics(title, artist);
+    }
 
     if (videoId) {
         if (isPlayerReady && ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
@@ -419,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setVoiceState(state, customText) {
         uiState.voiceState = state;
+        window.currentVoiceState = state;
         if (!jarvisOrb) return;
         jarvisOrb.classList.remove('idle', 'listening', 'thinking', 'processing', 'speaking', 'error');
 
@@ -427,28 +521,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 jarvisOrb.classList.add('listening');
                 jarvisOrb.setAttribute('aria-label', 'JARVIS escuchando tu voz...');
                 if (voiceStatusText) voiceStatusText.textContent = customText || "Escuchando...";
-                if (handsfreeHint) handsfreeHint.textContent = "🎙️ Micrófono Abierto";
+                if (handsfreeHint) handsfreeHint.textContent = "Micrófono Abierto";
                 if (micBtn) micBtn.classList.add('listening');
                 break;
             case "PROCESSING":
                 jarvisOrb.classList.add('thinking');
                 jarvisOrb.setAttribute('aria-label', 'JARVIS procesando respuesta...');
                 if (voiceStatusText) voiceStatusText.textContent = customText || "Procesando...";
-                if (handsfreeHint) handsfreeHint.textContent = "⚡ Consultando...";
+                if (handsfreeHint) handsfreeHint.textContent = "Consultando Red Neuronal...";
                 if (micBtn) micBtn.classList.remove('listening');
                 break;
             case "SPEAKING":
                 jarvisOrb.classList.add('speaking');
                 jarvisOrb.setAttribute('aria-label', 'JARVIS respondiendo con voz...');
                 if (voiceStatusText) voiceStatusText.textContent = customText || "Hablando...";
-                if (handsfreeHint) handsfreeHint.textContent = "🔊 Audio Activo";
+                if (handsfreeHint) handsfreeHint.textContent = "Audio Activo";
                 if (micBtn) micBtn.classList.remove('listening');
                 break;
             case "ERROR":
                 jarvisOrb.classList.add('error');
                 jarvisOrb.setAttribute('aria-label', 'JARVIS ha encontrado un error. Haz clic para reintentar.');
                 if (voiceStatusText) voiceStatusText.textContent = customText || "Error";
-                if (handsfreeHint) handsfreeHint.textContent = "⚠️ Intenta de nuevo";
+                if (handsfreeHint) handsfreeHint.textContent = "Atención Requerida";
                 if (micBtn) micBtn.classList.remove('listening');
                 break;
             case "IDLE":
@@ -456,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 jarvisOrb.classList.add('idle');
                 jarvisOrb.setAttribute('aria-label', 'JARVIS en reposo. Haz clic o di Jarvis para interactuar.');
                 if (voiceStatusText) voiceStatusText.textContent = customText || "Listo (escuchando 'Jarvis'...)";
-                if (handsfreeHint) handsfreeHint.textContent = "🎙️ Manos Libres Activo";
+                if (handsfreeHint) handsfreeHint.textContent = "Manos Libres Activo";
                 if (micBtn) micBtn.classList.remove('listening');
                 break;
         }
@@ -650,16 +744,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     utils.className = 'msg-utility-actions';
                     const fullText = event.full_text || '';
                     utils.innerHTML = `
-                        <button class="msg-util-btn btn-read-aloud" title="Leer en voz alta">🔊 Leer</button>
-                        <button class="msg-util-btn btn-copy-msg" title="Copiar texto">📋 Copiar</button>
-                        <button class="msg-util-btn btn-like-msg" title="Me gusta">🤍</button>
+                        <button class="msg-util-btn btn-read-aloud" title="Leer en voz alta">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                            <span>Voz</span>
+                        </button>
+                        <button class="msg-util-btn btn-copy-msg" title="Copiar respuesta">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Copiar</span>
+                        </button>
+                        <button class="msg-util-btn btn-like-msg" title="Guardar como preferencia">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                        </button>
                     `;
                     const readBtn = utils.querySelector('.btn-read-aloud');
                     if (readBtn) {
                         readBtn.addEventListener('click', () => {
                             clearTTSAudioQueue();
                             if (!fullText) return;
-                            // Fragmentar en oraciones para reproducción instantánea con pre-carga continua
                             const sentences = fullText.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [fullText];
                             for (const s of sentences) {
                                 const clean = s.trim();
@@ -673,8 +783,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (copyBtn) {
                         copyBtn.addEventListener('click', () => {
                             navigator.clipboard.writeText(fullText);
-                            copyBtn.textContent = '✓ Copiado';
-                            setTimeout(() => copyBtn.textContent = '📋 Copiar', 2000);
+                            copyBtn.innerHTML = `
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Copiado</span>
+                            `;
+                            setTimeout(() => {
+                                copyBtn.innerHTML = `
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <span>Copiar</span>
+                                `;
+                            }, 2000);
+                        });
+                    }
+                    const likeBtn = utils.querySelector('.btn-like-msg');
+                    if (likeBtn) {
+                        likeBtn.addEventListener('click', () => {
+                            likeBtn.classList.toggle('liked');
                         });
                     }
                     uiState.activeAssistantItem.appendChild(utils);
@@ -717,10 +841,10 @@ document.addEventListener('DOMContentLoaded', () => {
             alarmItem.innerHTML = `
                 <div class="chat-bubble assistant-bubble reminder-alarm-bubble">
                     <div class="msg-header">
-                        <span class="assistant-label">⚡ JARVIS AI</span>
+                        <span class="assistant-label" style="display:inline-flex; align-items:center; gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> JARVIS</span>
                         <span class="msg-time">${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
-                    <div class="msg-content">🔔 <strong>${title}</strong><br>${message}</div>
+                    <div class="msg-content"><span style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> <strong>${title}</strong></span><br>${message}</div>
                 </div>`;
             const chatContainer = document.getElementById('chat-messages');
             if (chatContainer) {
@@ -851,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const timeStr = getCurrentTimeStr();
             bubble.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-family:'Outfit',sans-serif; font-size:11px; font-weight:800; color:var(--accent-secondary); letter-spacing:0.5px;">⚡ JARVIS AI</span>
+                    <span style="font-family:'Outfit',sans-serif; font-size:11px; font-weight:800; color:var(--accent-secondary); letter-spacing:0.8px; display:inline-flex; align-items:center; gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> JARVIS</span>
                     <span style="font-size:10px; color:var(--text-muted); opacity:0.8;">${timeStr}</span>
                 </div>
                 <div class="msg-content">Pensando...</div>
@@ -1241,21 +1365,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let icon = "⚡";
+        let icon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>`;
         let label = detail || 'Acción completada';
         let btnText = "Ver detalle";
         let btnAction = () => {};
 
         if (actionType === "play_music") {
-            icon = "🎵";
+            icon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
             label = `Reproduciendo música • ${detail || 'Música'}`;
-            btnText = "▶ Oír pista";
+            btnText = "Oír pista";
             btnAction = () => {
                 const studioM = document.getElementById('music-studio-modal');
                 if (studioM) studioM.style.display = 'flex';
             };
         } else if (actionType === "remember_info" || actionType === "forget_memory") {
-            icon = "🧠";
+            icon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>`;
             label = `Memoria • ${detail || 'Preferencias guardadas'}`;
             btnText = "Ver memoria";
             btnAction = () => {
@@ -1291,7 +1415,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sender === 'jarvis') {
             bubble.innerHTML = `
                 <div class="msg-header">
-                    <span class="msg-sender-tag">⚡ JARVIS AI</span>
+                    <span class="msg-sender-tag">
+                        <span class="pulse-indicator"></span>
+                        <span class="sender-name">JARVIS AI</span>
+                    </span>
                     <span class="msg-time-tag">${timeStr}</span>
                 </div>
                 <div class="msg-content">${formatAssistantMessage(text)}</div>
@@ -1380,26 +1507,196 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODAL: ESTUDIO MUSICAL Y SONIDOS & COLA DINÁMICA
+    // MODAL: ESTUDIO MUSICAL Y SONIDOS, LETRAS SINCRONIZADAS & COLA DRAG & DROP
     // =========================================================================
     const studioModal = document.getElementById('music-studio-modal');
     const miniPlayerEl = document.getElementById('mini-player');
     const btnCloseStudio = document.getElementById('btn-close-music-studio');
     const studioBackdrop = document.getElementById('music-studio-backdrop');
 
-    // Inicializar render de playlist vacía
+    // --- MOTOR DE EXTRACCIÓN DINÁMICA DE COLOR DE LA CANCIÓN ---
+    function applyDynamicSongColor(title, artist) {
+        const text = ((title || '') + ' ' + (artist || '')).toLowerCase();
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        const accent = `hsl(${hue}, 90%, 60%)`;
+        const glow = `hsla(${hue}, 95%, 55%, 0.40)`;
+        const bgTint = `hsla(${hue}, 45%, 10%, 0.85)`;
+
+        document.documentElement.style.setProperty('--song-accent', accent);
+        document.documentElement.style.setProperty('--song-glow', glow);
+        document.documentElement.style.setProperty('--song-bg-tint', bgTint);
+    }
+
+    // --- MOTOR DE LETRAS SINCRONIZADAS ESTILO SPOTIFY (LRCLIB API) ---
+    let currentLyricsData = [];
+    let activeLyricIdx = -1;
+
+    async function fetchAndRenderLyrics(title, artist) {
+        const container = document.getElementById('studio-lyrics-container');
+        const trackLabel = document.getElementById('lyrics-current-track-name');
+        const statusBadge = document.getElementById('lyrics-source-text');
+        if (!container) return;
+
+        if (trackLabel) trackLabel.textContent = `${artist || ''} — ${title || 'Sin título'}`;
+        if (statusBadge) statusBadge.textContent = "Buscando letra...";
+        container.innerHTML = `
+            <div class="lyrics-empty-state">
+                <div class="lyrics-pulse-dot" style="width:14px; height:14px; margin-bottom:8px;"></div>
+                <p>Sincronizando letra con LRCLIB...</p>
+            </div>
+        `;
+        currentLyricsData = [];
+        activeLyricIdx = -1;
+
+        try {
+            const cleanTitle = (title || '').replace(/\(.*?\)|\(.*$/g, '').trim();
+            const cleanArtist = (artist || '').replace(/\(.*?\)|\(.*$/g, '').trim();
+            
+            let res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
+            let data = null;
+            if (res.ok) {
+                data = await res.json();
+            } else {
+                let sRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle + ' ' + cleanArtist)}`);
+                if (sRes.ok) {
+                    const searchArr = await sRes.json();
+                    if (Array.isArray(searchArr) && searchArr.length > 0) {
+                        data = searchArr[0];
+                    }
+                }
+            }
+
+            if (data && (data.syncedLyrics || data.plainLyrics)) {
+                if (statusBadge) statusBadge.textContent = data.syncedLyrics ? "LRCLIB • Sincronizada" : "LRCLIB • Letra Plana";
+                if (data.syncedLyrics) {
+                    parseAndRenderSyncedLyrics(data.syncedLyrics);
+                } else {
+                    renderPlainLyrics(data.plainLyrics);
+                }
+            } else {
+                if (statusBadge) statusBadge.textContent = "Modo Instrumental";
+                container.innerHTML = `
+                    <div class="lyrics-empty-state">
+                        <p>No se encontró letra registrada para "${title}".<br><span style="font-size:11px; opacity:0.6;">Disfruta de la atmósfera musical.</span></p>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.debug("[Lyrics] Error buscando letra:", err);
+            if (statusBadge) statusBadge.textContent = "Audio Studio";
+            container.innerHTML = `
+                <div class="lyrics-empty-state">
+                    <p>Letra no disponible temporalmente.<br><span style="font-size:11px; opacity:0.6;">Sincronización fuera de línea.</span></p>
+                </div>
+            `;
+        }
+    }
+
+    function parseAndRenderSyncedLyrics(lrcText) {
+        const container = document.getElementById('studio-lyrics-container');
+        if (!container) return;
+        container.innerHTML = '';
+        currentLyricsData = [];
+        activeLyricIdx = -1;
+
+        const lines = lrcText.split('\n');
+        lines.forEach((line) => {
+            const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+            if (match) {
+                const minutes = parseInt(match[1], 10);
+                const seconds = parseFloat(match[2]);
+                const time = minutes * 60 + seconds;
+                const text = match[3].trim();
+                if (text.length > 0) {
+                    const lyricObj = { time, text, elemIdx: currentLyricsData.length };
+                    currentLyricsData.push(lyricObj);
+
+                    const div = document.createElement('div');
+                    div.className = 'lyrics-line';
+                    div.id = `lyric-line-${lyricObj.elemIdx}`;
+                    div.textContent = text;
+                    div.addEventListener('click', () => {
+                        if (isPlayerReady && ytPlayer && typeof ytPlayer.seekTo === 'function') {
+                            ytPlayer.seekTo(time, true);
+                            syncLyricsWithTime(time);
+                        }
+                    });
+                    container.appendChild(div);
+                }
+            }
+        });
+
+        if (currentLyricsData.length === 0) {
+            renderPlainLyrics(lrcText);
+        }
+    }
+
+    function renderPlainLyrics(plainText) {
+        const container = document.getElementById('studio-lyrics-container');
+        if (!container) return;
+        container.innerHTML = '';
+        currentLyricsData = [];
+        activeLyricIdx = -1;
+
+        const lines = (plainText || '').split('\n');
+        lines.forEach(line => {
+            const t = line.trim();
+            if (t.length > 0) {
+                const div = document.createElement('div');
+                div.className = 'lyrics-line';
+                div.textContent = t;
+                container.appendChild(div);
+            }
+        });
+    }
+
+    window.syncLyricsWithTime = function(currentTime) {
+        if (!currentLyricsData || currentLyricsData.length === 0) return;
+        const container = document.getElementById('studio-lyrics-container');
+        if (!container) return;
+
+        let newActiveIdx = -1;
+        for (let i = 0; i < currentLyricsData.length; i++) {
+            const nextTime = (i + 1 < currentLyricsData.length) ? currentLyricsData[i + 1].time : Infinity;
+            if (currentTime >= currentLyricsData[i].time && currentTime < nextTime) {
+                newActiveIdx = i;
+                break;
+            }
+        }
+
+        if (newActiveIdx !== -1 && newActiveIdx !== activeLyricIdx) {
+            if (activeLyricIdx !== -1) {
+                const prevEl = document.getElementById(`lyric-line-${activeLyricIdx}`);
+                if (prevEl) prevEl.classList.remove('active');
+            }
+            activeLyricIdx = newActiveIdx;
+            const activeEl = document.getElementById(`lyric-line-${activeLyricIdx}`);
+            if (activeEl) {
+                activeEl.classList.add('active');
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+
+    // --- COLA DE REPRODUCCIÓN INTERACTIVA CON DRAG & DROP Y REMOVER ---
+    let draggedItemIdx = null;
+
     window.renderMusicStudioPlaylist = function() {
         const grid = document.getElementById('playlist-grid');
         const queueTag = document.getElementById('queue-count-tag');
         if (!grid) return;
         
-        if (queueTag) queueTag.textContent = `${window.playlistData.length} pistas`;
+        if (queueTag) queueTag.textContent = `${window.playlistData.length}`;
         grid.innerHTML = '';
 
         if (window.playlistData.length === 0) {
             grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; color: #9CA3AF; padding: 22px; font-size: 12px;">
-                    🎵 Sin canciones en cola. Pide una canción o mix a JARVIS.
+                <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 32px; font-size: 13px;">
+                    Sin canciones en cola. Pide una canción o mix a JARVIS.
                 </div>
             `;
             return;
@@ -1409,8 +1706,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             const isActive = idx === window.currentTrackIdx;
             card.className = `playlist-card-item ${isActive ? 'active' : ''}`;
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-index', idx);
+
             card.innerHTML = `
-                <div class="card-play-dot" style="background: ${track.color || '#EC4899'};">
+                <div class="card-drag-handle" title="Arrastra para reordenar con el mouse">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                        <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                        <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+                    </svg>
+                </div>
+                <div class="card-play-dot" style="background: ${track.color || 'var(--song-accent, #00f2fe)'};">
                     ${isActive && window.isStudioPlaying ? '⏸' : '▶'}
                 </div>
                 <div class="card-info">
@@ -1418,14 +1725,92 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-artist">${track.artist}</div>
                 </div>
                 <div class="card-duration">${track.duration || '3:30'}</div>
+                <button type="button" class="card-remove-btn" title="Quitar de la lista" data-remove-idx="${idx}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             `;
 
-            card.addEventListener('click', () => {
+            // Reproducir al hacer click
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.card-remove-btn') || e.target.closest('.card-drag-handle')) return;
                 window.playTrackFromStudio(idx);
             });
 
+            // Soporte Drag and Drop nativo
+            card.addEventListener('dragstart', (e) => {
+                draggedItemIdx = idx;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                card.classList.add('drag-over');
+            });
+
+            card.addEventListener('dragleave', () => {
+                card.classList.remove('drag-over');
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.classList.remove('drag-over');
+                if (draggedItemIdx === null || draggedItemIdx === idx) return;
+
+                const moved = window.playlistData.splice(draggedItemIdx, 1)[0];
+                window.playlistData.splice(idx, 0, moved);
+
+                if (window.currentTrackIdx === draggedItemIdx) {
+                    window.currentTrackIdx = idx;
+                } else if (draggedItemIdx < window.currentTrackIdx && idx >= window.currentTrackIdx) {
+                    window.currentTrackIdx--;
+                } else if (draggedItemIdx > window.currentTrackIdx && idx <= window.currentTrackIdx) {
+                    window.currentTrackIdx++;
+                }
+
+                draggedItemIdx = null;
+                window.renderMusicStudioPlaylist();
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging', 'drag-over');
+                draggedItemIdx = null;
+            });
+
+            // Botón de remoción de canción
+            const removeBtn = card.querySelector('.card-remove-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.removeTrackFromStudioQueue(idx);
+                });
+            }
+
             grid.appendChild(card);
         });
+    };
+
+    window.removeTrackFromStudioQueue = function(idx) {
+        if (idx < 0 || idx >= window.playlistData.length) return;
+        if (idx === window.currentTrackIdx) {
+            window.playlistData.splice(idx, 1);
+            if (window.playlistData.length > 0) {
+                window.currentTrackIdx = idx % window.playlistData.length;
+                window.playTrackFromStudio(window.currentTrackIdx);
+            } else {
+                window.currentTrackIdx = 0;
+                window.isStudioPlaying = false;
+                if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+            }
+        } else {
+            if (idx < window.currentTrackIdx) window.currentTrackIdx--;
+            window.playlistData.splice(idx, 1);
+        }
+        window.renderMusicStudioPlaylist();
     };
 
     window.playTrackFromStudio = function(index) {
@@ -1445,8 +1830,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainArtist) mainArtist.textContent = track.artist;
         if (genreBadge) genreBadge.textContent = track.genre || 'EN REPRODUCCIÓN';
         if (timeTotal) timeTotal.textContent = track.duration || '3:45';
-        if (studioPlayBtn) studioPlayBtn.textContent = '⏸';
-        if (playPauseBtn) playPauseBtn.textContent = '⏸';
+        if (studioPlayBtn) studioPlayBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+        if (playPauseBtn) playPauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
 
         const playerTrackTitle = document.getElementById('player-track-title');
         const playerTrackArtist = document.getElementById('player-track-artist');
@@ -1459,6 +1844,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (studioModal) studioModal.classList.add('playing');
 
+        // Aplicar color dinámico de la canción
+        applyDynamicSongColor(track.title, track.artist);
+
+        // Cargar letra sincronizada
+        fetchAndRenderLyrics(track.title, track.artist);
+
         window.renderMusicStudioPlaylist();
 
         if (track.videoId || track.id) {
@@ -1467,12 +1858,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.addTrackToStudioQueue = function(title, artist, videoId, duration) {
-        const colors = ['#EC4899', '#8B5CF6', '#10B981', '#3B82F6', '#F59E0B', '#F43F5E'];
+        const colors = ['#00F2FE', '#4FACFE', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'];
         const randomColor = colors[window.playlistData.length % colors.length];
 
         const existingIdx = window.playlistData.findIndex(t => t.title.toLowerCase() === title.toLowerCase());
         if (existingIdx !== -1) {
-            // Ya está en la lista: si no hay nada reproduciéndose, reproducir; si ya hay, solo actualizar UI
             if (!window.isStudioPlaying) {
                 window.playTrackFromStudio(existingIdx);
             } else {
@@ -1493,18 +1883,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.playlistData.push(newTrack);
 
-        // Solo reproducir si NO hay nada activo
         if (!window.isStudioPlaying) {
             window.playTrackFromStudio(window.playlistData.length - 1);
         } else {
-            // Solo agregar a la lista, sin interrumpir lo que se reproduce
             window.renderMusicStudioPlaylist();
         }
     };
 
     window.loadPlaylistFromBackend = function(tracks, replaceAll) {
         if (!tracks || tracks.length === 0) return;
-        const colors = ['#EC4899', '#8B5CF6', '#10B981', '#3B82F6', '#F59E0B', '#F43F5E'];
+        const colors = ['#00F2FE', '#4FACFE', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'];
 
         const newTracks = tracks.map((t, i) => ({
             id: t.id,
@@ -1516,14 +1904,45 @@ document.addEventListener('DOMContentLoaded', () => {
             color: colors[i % colors.length]
         }));
 
-        // Siempre reemplaza: el backend es la fuente de verdad de la cola
         window.playlistData = newTracks;
         window.currentTrackIdx = 0;
         window.playTrackFromStudio(0);
     };
 
+    // Pestañas del Estudio: Letras / Cola / Ambiente
+    const tabLyricsBtn = document.getElementById('tab-lyrics-btn');
+    const tabQueueBtn = document.getElementById('tab-queue-btn');
+    const tabAmbientBtn = document.getElementById('tab-ambient-btn');
+    const viewLyrics = document.getElementById('studio-lyrics-view');
+    const viewQueue = document.getElementById('studio-queue-view');
+    const viewAmbient = document.getElementById('studio-ambient-view');
+    const modeSubtitle = document.getElementById('studio-mode-subtitle');
 
-    // Render inicial vacío
+    function switchStudioTab(tab) {
+        [tabLyricsBtn, tabQueueBtn, tabAmbientBtn].forEach(b => b?.classList.remove('active'));
+        [viewLyrics, viewQueue, viewAmbient].forEach(v => { if (v) v.style.display = 'none'; });
+
+        if (tab === 'lyrics') {
+            if (tabLyricsBtn) tabLyricsBtn.classList.add('active');
+            if (viewLyrics) viewLyrics.style.display = 'flex';
+            if (modeSubtitle) modeSubtitle.textContent = 'Letras Sincronizadas en Tiempo Real';
+        } else if (tab === 'queue') {
+            if (tabQueueBtn) tabQueueBtn.classList.add('active');
+            if (viewQueue) viewQueue.style.display = 'flex';
+            if (modeSubtitle) modeSubtitle.textContent = 'Cola de Reproducción & Reordenamiento';
+            window.renderMusicStudioPlaylist();
+        } else if (tab === 'ambient') {
+            if (tabAmbientBtn) tabAmbientBtn.classList.add('active');
+            if (viewAmbient) viewAmbient.style.display = 'block';
+            if (modeSubtitle) modeSubtitle.textContent = 'Mezclador de Ambiente Procedural';
+        }
+    }
+
+    if (tabLyricsBtn) tabLyricsBtn.addEventListener('click', () => switchStudioTab('lyrics'));
+    if (tabQueueBtn) tabQueueBtn.addEventListener('click', () => switchStudioTab('queue'));
+    if (tabAmbientBtn) tabAmbientBtn.addEventListener('click', () => switchStudioTab('ambient'));
+
+    // Render inicial
     window.renderMusicStudioPlaylist();
 
     if (miniPlayerEl && studioModal) {
@@ -1545,6 +1964,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Salto interactivo en la barra de progreso
+    const studioProgressBg = document.getElementById('studio-progress-bg');
+    if (studioProgressBg) {
+        studioProgressBg.addEventListener('click', (e) => {
+            if (isPlayerReady && ytPlayer && typeof ytPlayer.getDuration === 'function' && typeof ytPlayer.seekTo === 'function') {
+                const rect = studioProgressBg.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const pct = Math.max(0, Math.min(1, clickX / rect.width));
+                const dur = ytPlayer.getDuration();
+                if (dur > 0) {
+                    const seekTime = pct * dur;
+                    ytPlayer.seekTo(seekTime, true);
+                    if (typeof window.syncLyricsWithTime === 'function') {
+                        window.syncLyricsWithTime(seekTime);
+                    }
+                }
+            }
+        });
+    }
+
     const studioBtnPlayPause = document.getElementById('studio-btn-playpause');
     const studioBtnNext = document.getElementById('studio-btn-next');
     const studioBtnPrev = document.getElementById('studio-btn-prev');
@@ -1554,9 +1993,16 @@ document.addEventListener('DOMContentLoaded', () => {
         studioBtnPlayPause.addEventListener('click', () => {
             if (window.playlistData.length === 0) return;
             window.isStudioPlaying = !window.isStudioPlaying;
-            studioBtnPlayPause.textContent = window.isStudioPlaying ? '⏸' : '▶';
+            studioBtnPlayPause.innerHTML = window.isStudioPlaying
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
+            
             const miniBtn = document.getElementById('btn-playpause');
-            if (miniBtn) miniBtn.textContent = window.isStudioPlaying ? '⏸' : '▶';
+            if (miniBtn) {
+                miniBtn.innerHTML = window.isStudioPlaying
+                    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            }
             
             if (isPlayerReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
                 if (window.isStudioPlaying) ytPlayer.playVideo();

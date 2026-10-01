@@ -27,7 +27,7 @@ from providers.mock_provider import MockAIProvider
 # Herramientas del Sistema y Desktop
 from tools.implementations.system_tools import CurrentDatetimeTool, LocationTool, ParseTimeTool, PingTool, SetVolumeTool
 from tools.implementations.desktop_tools import (
-    OpenAppTool, FocusAppTool, CloseAppTool, SearchFilesTool, GetRunningAppsTool,
+    OpenAppTool, FocusAppTool, CloseAppTool, CloseWindowTool, SearchFilesTool, GetRunningAppsTool,
     OpenUrlTool, OpenFileTool, OpenFolderTool, ListFilesTool, GetActiveAppTool,
     CreateTextFileTool, ReadTextFileTool, CreatePdfTool, CreateDocxTool, GenerateImageTool,
     AnalyzeScreenTool
@@ -49,7 +49,7 @@ from tools.implementations.reminder_tools import (
 from tools.implementations.task_tools import (
     CreateTaskTool, ListTasksTool, CompleteTaskTool, DeleteTaskTool, ClearTasksTool
 )
-from tools.implementations.web_tools import WebSearchTool, ReadWebpageTool
+from tools.implementations.web_tools import WebSearchTool, ReadWebpageTool, SearchYouTubeTool
 from tools.implementations.automation_tools import ExecuteWorkflowTool, DailyBriefingTool
 
 class JarvisOrchestrator:
@@ -107,6 +107,7 @@ class JarvisOrchestrator:
         # Automatización de Windows / Desktop
         self.tool_router.register_tool(OpenAppTool())
         self.tool_router.register_tool(CloseAppTool())
+        self.tool_router.register_tool(CloseWindowTool())
         self.tool_router.register_tool(SearchFilesTool())
         self.tool_router.register_tool(ListFilesTool())
         self.tool_router.register_tool(CreateTextFileTool())
@@ -160,6 +161,7 @@ class JarvisOrchestrator:
         # Web
         self.tool_router.register_tool(ReadWebpageTool())
         self.tool_router.register_tool(WebSearchTool())
+        self.tool_router.register_tool(SearchYouTubeTool())
 
         # Automatización y Workflows Multi-paso (Fase 18)
         self.tool_router.register_tool(ExecuteWorkflowTool())
@@ -232,7 +234,13 @@ Eres JARVIS, el asistente personal inteligente y compañero digital para Windows
    - Cuando el usuario te pida OLVIDAR algo, llama `forget_memory` inmediatamente.
 
 3. USO ESTRICTO DE HERRAMIENTAS (SOLO CUANDO SE SOLICITE UNA ACCIÓN REAL):
-   - Abre o cierra programas → `open_application` / `close_application`
+   - Abre o cierra programas o aplicaciones → `open_application` / `close_application`
+     * Soporta Opera, Opera GX, Chrome, Edge, Brave, Firefox, Calculadora, Bloc de notas, Explorador, VS Code, etc.
+   - Cerrar ventanas o pestañas específicas → `close_window(window_title="...", app_name="...")` o `close_application(app_name="opera", window_title="...")`
+     * Úsalo cuando el usuario pida cerrar una ventana o pestaña en particular (ej. "cierra la ventana de YouTube en Opera", "cierra la pestaña de GitHub", "cierra la ventana de X").
+   - Abrir carpetas, escritorio o pestañas del explorador ("abre el escritorio", "abre pestañas del escritorio", "abre la carpeta descargas") → `open_folder(folder_path="desktop")` o `open_application(app_name="desktop")` o `open_application(app_name="explorer")`.
+   - Buscar en YouTube ("busca en youtube...", "pon en youtube...", "quiero ver en youtube") → SIEMPRE llama a `search_youtube(query="...")`. NUNCA uses `open_url` con solo 'youtube.com' cuando hay una consulta de búsqueda.
+   - Búsqueda web general en Google → `web_search(query="...")`
    - Crear archivos de texto simple → `create_text_file` (filename, content, location='desktop')
    - Crear documentos PDF formales (estilo APA/Calibri/Helvetica) → `create_pdf` (filename, title, content, standard='pdf/a', author='Dante', location='desktop').
      IMPORTANTE: `content` admite tablas Markdown ('| Col A | Col B |' + fila separadora '|---|---|') e imágenes ('![descripción](archivo.png)'). Si el usuario pide un documento con tabla o imagen, genera la imagen primero con `generate_image` si hace falta y luego incluye la sintaxis dentro de `content`. Se soportan rutas, URLs, base64 o auto-síntesis con máxima estrética APA. NUNCA digas que no puedes incluir imágenes en PDF o DOCX: sí puedes.

@@ -100,7 +100,12 @@ async def test_layer_2_skipped_on_neutral_and_technical_messages():
         "crea un archivo de texto con el resumen de la reunión",
         "cuál es la capital de Australia",
         "pon algo de música clásica para programar",
-        "busca en google documentación de python 3.12"
+        "busca en google documentación de python 3.12",
+        "solo necesito ver mis pendientes",
+        "solo abre youtube",
+        "para que sirve este comando",
+        "adios, nos vemos manana",
+        "gracias por todo tu apoyo en el codigo"
     ]
 
     for msg in neutral_messages:

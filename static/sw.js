@@ -2,7 +2,7 @@
 // JARVIS Assistant — Progressive Web App Service Worker (v4.0 Mobile-Ready)
 // =========================================================================
 
-const CACHE_NAME = 'jarvis-static-cache-v1';
+const CACHE_NAME = 'jarvis-liquid-glass-v2';
 const STATIC_ASSETS = [
     '/',
     '/static/style.css',

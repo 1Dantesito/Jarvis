@@ -41,6 +41,7 @@ TOOL_REGISTRY: Dict[str, ToolType] = {
     "open_application": ToolType.ACTION,
     "focus_application": ToolType.ACTION,
     "close_application": ToolType.ACTION,
+    "close_window": ToolType.ACTION,
     "search_files": ToolType.QUERY,
     "get_running_applications": ToolType.QUERY,
     "open_url": ToolType.ACTION,
@@ -93,6 +94,7 @@ TOOL_REGISTRY: Dict[str, ToolType] = {
     # Web
     "read_webpage": ToolType.QUERY,
     "web_search": ToolType.ACTION,
+    "search_youtube": ToolType.ACTION,
 
     # Control de sistema
     "set_volume": ToolType.ACTION,
