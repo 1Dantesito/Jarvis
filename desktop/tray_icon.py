@@ -1,28 +1,35 @@
-﻿from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
+import os
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen
 from PyQt6.QtCore import Qt, pyqtSignal
 
 def create_jarvis_icon(size=64) -> QIcon:
-    """Genera un icono nativo nítido del orbe dorado de JARVIS."""
+    """Genera o carga el icono nativo de JARVIS (Liquid Glass / Arc Reactor)."""
+    ico_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "jarvis.ico")
+    if os.path.exists(ico_path):
+        icon = QIcon(ico_path)
+        if not icon.isNull():
+            return icon
+
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    # Círculo base (Café oscuro / Obsidian)
-    painter.setBrush(QBrush(QColor(44, 30, 24)))
-    painter.setPen(QPen(QColor(198, 139, 89), 2))
+    # Círculo base (Obsidian Glass)
+    painter.setBrush(QBrush(QColor(10, 17, 24)))
+    painter.setPen(QPen(QColor(0, 242, 254, 200), 2))
     painter.drawEllipse(4, 4, size - 8, size - 8)
 
-    # Anillo interior dorado brillante
-    painter.setPen(QPen(QColor(221, 161, 94), 2))
+    # Anillo interior cian neón
+    painter.setPen(QPen(QColor(79, 172, 254, 220), 2))
     painter.drawEllipse(12, 12, size - 24, size - 24)
 
     # Núcleo energético central
-    painter.setBrush(QBrush(QColor(245, 158, 11)))
+    painter.setBrush(QBrush(QColor(0, 242, 254)))
     painter.setPen(Qt.PenStyle.NoPen)
-    painter.drawEllipse(size // 2 - 6, size // 2 - 6, 12, 12)
+    painter.drawEllipse(size // 2 - 5, size // 2 - 5, 10, 10)
 
     painter.end()
     return QIcon(pixmap)
@@ -49,9 +56,9 @@ class JarvisTrayIcon(QSystemTrayIcon):
         menu = QMenu()
         menu.setStyleSheet("""
             QMenu {
-                background-color: #2C1E18;
-                color: #FAF5EE;
-                border: 1px solid rgba(198, 139, 89, 0.4);
+                background-color: #0A1118;
+                color: #E6F8FF;
+                border: 1px solid rgba(0, 242, 254, 0.4);
                 border-radius: 8px;
                 padding: 6px;
                 font-family: 'Segoe UI', system-ui, sans-serif;
@@ -62,13 +69,13 @@ class JarvisTrayIcon(QSystemTrayIcon):
                 border-radius: 4px;
             }
             QMenu::item:selected {
-                background-color: #C68B59;
-                color: #2C1E18;
+                background-color: rgba(0, 242, 254, 0.2);
+                color: #00F2FE;
                 font-weight: 600;
             }
             QMenu::separator {
                 height: 1px;
-                background-color: rgba(198, 139, 89, 0.2);
+                background-color: rgba(0, 242, 254, 0.2);
                 margin: 4px 8px;
             }
         """)

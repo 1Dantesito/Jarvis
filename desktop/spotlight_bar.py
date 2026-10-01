@@ -45,8 +45,8 @@ class SpotlightWindow(QWidget):
         self.container.setObjectName("spotlightContainer")
         self.container.setStyleSheet("""
             QFrame#spotlightContainer {
-                background-color: rgba(26, 18, 14, 0.94);
-                border: 1.5px solid rgba(198, 139, 89, 0.5);
+                background-color: rgba(10, 17, 24, 0.94);
+                border: 1.5px solid rgba(0, 242, 254, 0.45);
                 border-radius: 18px;
             }
         """)
@@ -54,8 +54,8 @@ class SpotlightWindow(QWidget):
         # Sombra suave
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(35)
-        shadow.setColor(QColor(0, 0, 0, 180))
-        shadow.setOffset(0, 10)
+        shadow.setColor(QColor(0, 242, 254, 45))
+        shadow.setOffset(0, 8)
         self.container.setGraphicsEffect(shadow)
 
         container_layout = QVBoxLayout(self.container)
@@ -68,7 +68,7 @@ class SpotlightWindow(QWidget):
 
         # Orbe / Logo indicador
         self.logo_label = QLabel("⚡", self)
-        self.logo_label.setStyleSheet("font-size: 20px; color: #DDA15E;")
+        self.logo_label.setStyleSheet("font-size: 20px; color: #00F2FE;")
         search_row.addWidget(self.logo_label)
 
         # Campo de entrada
@@ -78,14 +78,15 @@ class SpotlightWindow(QWidget):
             QLineEdit {
                 background: transparent;
                 border: none;
-                color: #FAF5EE;
+                color: #E6F8FF;
                 font-family: 'Segoe UI', system-ui, sans-serif;
                 font-size: 16px;
                 font-weight: 500;
-                selection-background-color: #C68B59;
+                selection-background-color: #00F2FE;
+                selection-color: #0A1118;
             }
             QLineEdit::placeholder {
-                color: rgba(250, 245, 238, 0.4);
+                color: rgba(230, 248, 255, 0.4);
                 font-style: normal;
             }
         """)
@@ -97,17 +98,18 @@ class SpotlightWindow(QWidget):
         self.btn_full.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_full.setStyleSheet("""
             QPushButton {
-                background-color: rgba(198, 139, 89, 0.2);
-                color: #DDA15E;
-                border: 1px solid rgba(198, 139, 89, 0.4);
+                background-color: rgba(0, 242, 254, 0.12);
+                color: #00F2FE;
+                border: 1px solid rgba(0, 242, 254, 0.35);
                 border-radius: 8px;
                 padding: 5px 12px;
                 font-size: 11px;
                 font-weight: 600;
             }
             QPushButton:hover {
-                background-color: rgba(198, 139, 89, 0.4);
-                color: #FAF5EE;
+                background-color: rgba(0, 242, 254, 0.25);
+                color: #FFFFFF;
+                border-color: #00F2FE;
             }
         """)
         self.btn_full.clicked.connect(self._on_open_full)
@@ -118,7 +120,7 @@ class SpotlightWindow(QWidget):
         # Línea divisoria
         self.divider = QFrame()
         self.divider.setFrameShape(QFrame.Shape.HLine)
-        self.divider.setStyleSheet("background-color: rgba(198, 139, 89, 0.25); max-height: 1px;")
+        self.divider.setStyleSheet("background-color: rgba(0, 242, 254, 0.2); max-height: 1px;")
         self.divider.hide()
         container_layout.addWidget(self.divider)
 

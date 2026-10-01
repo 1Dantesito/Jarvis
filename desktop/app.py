@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import time
 import socket
 import threading
@@ -60,8 +60,11 @@ class JarvisDesktopApplication:
         # 1. Iniciar servidor backend si no está activo
         if not is_port_in_use(self.server_port, self.server_host):
             self.uvicorn_server, _ = start_backend_server_thread(self.server_host, self.server_port)
-            # Breve pausa para asegurar enlace de sockets
-            time.sleep(1.0)
+            # Espera activa ultra rápida para enlace de sockets
+            for _ in range(60):
+                if is_port_in_use(self.server_port, self.server_host):
+                    break
+                time.sleep(0.05)
 
         # 2. Inicializar Ventana Principal, Spotlight y Bandeja
         self.main_window = MainWindow(server_url=self.server_url)

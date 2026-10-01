@@ -57,12 +57,15 @@ async def lifespan(app: FastAPI):
     scheduler_task = asyncio.create_task(ReminderScheduler.start(interval_seconds=5))
     logger.info(f"[Servidor v{settings.VERSION}] ReminderScheduler y ReminderEngine iniciados en segundo plano.")
     
-    # Auto-diagnóstico al arrancar en logs
-    try:
-        health_report = await perform_health_check()
-        logger.info(f"[Auto-Diagnóstico v3.0] Estado de Servicios:\n{json.dumps(health_report, indent=2)}")
-    except Exception as e:
-        logger.warning(f"[Auto-Diagnóstico] Error en chequeo inicial: {e}")
+    # Auto-diagnóstico asíncrono no bloqueante en segundo plano (arranque instantáneo)
+    async def _async_startup_health():
+        try:
+            health_report = await perform_health_check()
+            logger.info(f"[Auto-Diagnóstico v3.0] Estado de Servicios:\n{json.dumps(health_report, indent=2)}")
+        except Exception as e:
+            logger.warning(f"[Auto-Diagnóstico] Error en chequeo inicial: {e}")
+
+    asyncio.create_task(_async_startup_health())
 
     yield
     reminder_engine.stop()

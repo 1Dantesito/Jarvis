@@ -1,13 +1,14 @@
 @echo off
+chcp 65001 >nul
 title JARVIS v3.1 — Native Desktop Assistant (PyQt6)
-color 0A
+color 0B
 
 cd /d "%~dp0"
 
-echo =====================================================
-echo    JARVIS v3.1 - Native Desktop Assistant (PyQt6)
+echo ----------------------------------------------------
+echo    ⚡ JARVIS v3.1 — Native Desktop Assistant (PyQt6)
 echo    Bandeja del Sistema + Barra Flotante (Alt + Espacio)
-echo =====================================================
+echo ----------------------------------------------------
 echo.
 
 if not exist "%~dp0venv\Scripts\python.exe" (
@@ -17,7 +18,7 @@ if not exist "%~dp0venv\Scripts\python.exe" (
 )
 
 if not exist "%~dp0.env" (
-    echo [ERROR] No se encontro el archivo .env en: %~dp0
+    echo [ERROR] Archivo de configuracion .env no encontrado en: %~dp0
     pause
     exit /b 1
 )
@@ -25,4 +26,8 @@ if not exist "%~dp0.env" (
 echo [INFO] Iniciando JARVIS Nativo (PyQt6)...
 "%~dp0venv\Scripts\python.exe" desktop_app.py
 
-pause
+if %errorlevel% neq 0 (
+    echo.
+    echo [AVISO] La aplicacion se cerro con codigo de salida %errorlevel%.
+    pause
+)
