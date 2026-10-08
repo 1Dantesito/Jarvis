@@ -102,6 +102,10 @@ TOOL_REGISTRY: Dict[str, ToolType] = {
     # Automatización y Workflows Multi-paso (Fase 18)
     "execute_workflow": ToolType.ACTION,
     "get_daily_briefing": ToolType.QUERY,
+
+    # Cisco Packet Tracer & Redes
+    "solve_telematica_lab": ToolType.ACTION,
+    "generate_packet_tracer_pkt": ToolType.ACTION,
 }
 
 class ToolRouter:

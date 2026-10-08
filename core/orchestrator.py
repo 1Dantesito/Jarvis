@@ -51,6 +51,7 @@ from tools.implementations.task_tools import (
 )
 from tools.implementations.web_tools import WebSearchTool, ReadWebpageTool, SearchYouTubeTool
 from tools.implementations.automation_tools import ExecuteWorkflowTool, DailyBriefingTool
+from tools.implementations.packet_tracer_tools import SolveTelematicaLabTool, GeneratePktTool
 
 class JarvisOrchestrator:
     """
@@ -166,6 +167,10 @@ class JarvisOrchestrator:
         # Automatización y Workflows Multi-paso (Fase 18)
         self.tool_router.register_tool(ExecuteWorkflowTool())
         self.tool_router.register_tool(DailyBriefingTool())
+
+        # Cisco Packet Tracer & Redes
+        self.tool_router.register_tool(SolveTelematicaLabTool())
+        self.tool_router.register_tool(GeneratePktTool())
 
     def _get_provider_tools_schema(self, provider: AIProvider) -> List[Dict[str, Any]]:
         if provider.name == "anthropic":
