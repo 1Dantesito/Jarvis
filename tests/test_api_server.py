@@ -106,3 +106,22 @@ def test_websocket_reconnection_preserves_session():
         assert sync2["session_id"] == "recon_session_1"
 
 
+def test_websocket_user_text_streaming():
+    with client.websocket_connect("/ws/v1/chat?session_id=ws_stream_test") as ws:
+        sync = ws.receive_json()
+        assert sync["type"] == "sync_state"
+        ws.send_json({"type": "user_text", "text": "haz una lista de comida italiana"})
+        received_types = []
+        for _ in range(15):
+            msg = ws.receive_json()
+            m_type = msg.get("type")
+            received_types.append(m_type)
+            if m_type == "response_end":
+                assert "full_text" in msg
+                assert msg["full_text"] != ""
+                break
+        assert "response_end" in received_types
+        assert "error" not in received_types
+
+
+
