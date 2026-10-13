@@ -749,7 +749,9 @@ async def websocket_chat_endpoint(
 
                                 clean_chunk = ResponseSanitizer.sanitize(chunk["text"])
                                 if clean_chunk:
-                                    accumulated_full_text += ("\n" if accumulated_full_text and "\n" in clean_chunk else " ") + clean_chunk
+                                    needs_break = clean_chunk.startswith("#") or clean_chunk.startswith("-") or clean_chunk.startswith("*") or bool(re.match(r'^\d+\.', clean_chunk))
+                                    sep = "\n\n" if (accumulated_full_text and needs_break) else ("\n" if accumulated_full_text and "\n" in clean_chunk else " ")
+                                    accumulated_full_text += sep + clean_chunk
                                     spoken_chunk = ResponseSanitizer.sanitize_for_speech(clean_chunk)
                                     encoded_chunk = urllib.parse.quote(spoken_chunk)
                                     await websocket.send_json({

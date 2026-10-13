@@ -2,7 +2,7 @@
 // JARVIS Assistant — Progressive Web App Service Worker (v4.0 Mobile-Ready)
 // =========================================================================
 
-const CACHE_NAME = 'jarvis-cards-showcase-v8';
+const CACHE_NAME = 'jarvis-cards-showcase-v9';
 const STATIC_ASSETS = [
     '/',
     '/static/style.css',

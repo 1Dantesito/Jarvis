@@ -769,12 +769,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function beautifyMarkdownText(text) {
         if (!text) return "";
         let s = text;
+        // 0. Separar encabezados markdown (# Título, ## Subtítulo, ### 01. Ítem) pegados a texto previo
+        s = s.replace(/([^\n])\s+(?=#{1,3}\s+)/g, "$1\n\n");
+        s = s.replace(/([^\n])\s+(?=JARVIS\s*[·•-]?\s*¿?QUÉ\s+TE\s+APETECE)/gi, "$1\n\n");
+        // 0.1 Separar subtítulo en negrita dentro de una tarjeta si está pegado al título
+        s = s.replace(/(###\s*0?\d+\.\s*[^\n*]+?)\s+(\*\*[^\*\n]+\*\*)/g, "$1\n$2");
         // 1. Separar encabezado previo a una lista numerada (ej. ': 1. ' -> ':\n\n1. ')
         s = s.replace(/([:;])\s+(?=\d+\.\s+)/g, "$1\n\n");
         // 2. Separar elementos de lista numerada pegados en el mismo renglón (ej. '. 2. ' -> '.\n\n2. ')
         s = s.replace(/([.?!])\s+(?=\d+\.\s+)/g, "$1\n\n");
         // 3. Separar viñetas pegadas tras puntuación (ej. ': - ' -> ':\n\n- ')
-        s = s.replace(/([:;.?!])\s+(?=[-•*]\s+)/g, "$1\n\n- ");
+        s = s.replace(/([:;.?!])\s+(?=[-•*]\s+)/g, "$1\n\n");
         // Separar viñetas pegadas sin puntuación cuando van seguidas de mayúscula o negrita
         s = s.replace(/(?<=[^\s:;.?!])\s+[-•*]\s+(?=[A-ZÁÉÍÓÚ]|\*\*)/g, "\n\n- ");
         // 4. Normalizar viñetas unicode (•, ·) a guiones markdown estándar
@@ -885,11 +890,79 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function parseShowcaseItem(rawItem, idx) {
+        let s = rawItem.trim();
+        let numStr = `${idx + 1}`;
+        let title = `Opción ${idx + 1}`;
+        let meta = '';
+        let desc = '';
+        let imgUrl = null;
+
+        // 1. Extraer imagen si existe: ![alt](url)
+        const imgMatch = s.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+        if (imgMatch) {
+            imgUrl = imgMatch[2].trim();
+            s = s.replace(imgMatch[0], '').trim();
+        }
+
+        // 2. Extraer número de tarjeta
+        const numMatch = s.match(/^###\s*0?(\d+)\.\s*/i);
+        if (numMatch) {
+            numStr = numMatch[1];
+            s = s.substring(numMatch[0].length).trim();
+        }
+
+        // 3. Caso A: Multilínea
+        const lines = s.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+            title = lines[0].replace(/^[*_#\s]+|[*_#\s]+$/g, '').trim();
+
+            let descStartIdx = 1;
+            const l1 = lines[1];
+            const mBold = l1.match(/^\*\*([^*]+)\*\*$/);
+            const hasSep = l1.includes('·') || l1.includes('/') || l1.includes(' - ');
+            if (mBold) {
+                meta = mBold[1].trim();
+                descStartIdx = 2;
+            } else if ((hasSep || l1.length < 50) && !l1.endsWith('.') && !l1.includes(':')) {
+                meta = l1.replace(/^[*_]+|[*_]+$/g, '').trim();
+                descStartIdx = 2;
+            }
+            desc = lines.slice(descStartIdx).join(' ').trim();
+        } else {
+            // Caso B: Línea única compacta
+            const boldMetaMatch = s.match(/^([^\n*]+?)\s+\*\*([^*]+)\*\*\s+([\s\S]+)$/);
+            if (boldMetaMatch) {
+                title = boldMetaMatch[1].trim();
+                meta = boldMetaMatch[2].trim();
+                desc = boldMetaMatch[3].trim();
+            } else {
+                const sepMetaMatch = s.match(/\b([A-ZÁÉÍÓÚ][a-zñáéíóú]+\s*(?:·|\/)\s*[A-ZÁÉÍÓÚ][a-zñáéíóú]+)\b/);
+                if (sepMetaMatch && sepMetaMatch.index > 0 && sepMetaMatch.index < 50) {
+                    const matchPos = sepMetaMatch.index;
+                    title = s.substring(0, matchPos).trim();
+                    meta = sepMetaMatch[1].trim();
+                    desc = s.substring(matchPos + sepMetaMatch[0].length).trim();
+                } else {
+                    const dotMatch = s.match(/^([^.?!:]{2,45}[:.]?)\s+([A-ZÁÉÍÓÚ][\s\S]+)$/);
+                    if (dotMatch) {
+                        title = dotMatch[1].replace(/[:.]$/, '').trim();
+                        desc = dotMatch[2].trim();
+                    } else {
+                        title = s;
+                    }
+                }
+            }
+        }
+
+        return { numStr, title, meta, desc, imgUrl };
+    }
+
     function extractShowcaseCardsFromMarkdown(text, visualBlocks) {
         if (!text) return text;
 
         // Patrón A: Encabezados numerados tipo ### 01. Título o ### 1. Título
-        const cardBlockRegex = /(?:^|\n)(###\s*0?\d+\.\s*[^\n]+[\s\S]*?)(?=(?:\n*###\s*0?\d+\.\s*|\n*__VISUAL_BLOCK_|\n*JARVIS|\n*¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|\n*#|\n*---|$))/gi;
+        const cardBlockRegex = /(?:^|\n|\s)(###\s*0?\d+\.\s*[\s\S]*?)(?=(?:\s*###\s*0?\d+\.\s*|\s*__VISUAL_BLOCK_|\s*JARVIS|\s*¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|\s*#\s+[A-ZÁÉÍÓÚ]|\s*---|$))/gi;
         const matches = Array.from(text.matchAll(cardBlockRegex));
 
         if (matches.length >= 1) {
@@ -899,29 +972,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let cardsHtml = '';
             matches.forEach((m, idx) => {
-                const rawItem = m[1].trim();
-                const headerMatch = rawItem.match(/^###\s*0?(\d+)\.\s*([^\n]+)/i);
-                const numStr = headerMatch ? headerMatch[1] : `${idx + 1}`;
-                const title = headerMatch ? headerMatch[2].trim() : `Opción ${idx + 1}`;
-
-                let rest = rawItem.replace(/^###\s*0?\d+\.\s*[^\n]+\n*/i, '').trim();
-
-                let imgUrl = null;
-                const imgMatch = rest.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-                if (imgMatch) {
-                    imgUrl = imgMatch[2].trim();
-                    rest = rest.replace(imgMatch[0], '').trim();
-                }
-
-                let meta = '';
-                const metaMatch = rest.match(/^\*\*([^\*\n]+)\*\*/m);
-                if (metaMatch) {
-                    meta = metaMatch[1].trim();
-                    rest = rest.replace(metaMatch[0], '').trim();
-                }
-
-                const desc = rest.replace(/\n+/g, ' ').trim();
-                cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl);
+                const parsed = parseShowcaseItem(m[1], idx);
+                cardsHtml += buildShowcaseCardHtml(parsed.numStr, parsed.title, parsed.meta, parsed.desc, parsed.imgUrl);
             });
 
             if (cardsHtml) {
@@ -951,6 +1003,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const meta = (m[4] || m[5] || '').trim();
                 const desc = (m[6] || '').trim().replace(/\n+/g, ' ');
                 cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl);
+            });
+
+            if (cardsHtml) {
+                const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
+                const idx = visualBlocks.length;
+                visualBlocks.push(gridHtml);
+
+                const before = text.substring(0, firstIndex);
+                const after = text.substring(totalSpanEnd);
+                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+            }
+        }
+
+        // Patrón C: Listas numeradas estándar con negrita (ej. 1. **Pizza napolitana** (Nápoles · Campania): Masa...)
+        const patternCRegex = /(?:^|\n)[ \t]*(\d{1,2})\.\s+\*\*([^*]+)\*\*(?:\s*[(·\-]\s*([^):\n]+)[):\-])?\s*[:\-]?\s*([^\n]+(?:\n+(?!\d{1,2}\.\s+\*\*)[^\n]+)*)/g;
+        const cMatches = Array.from(text.matchAll(patternCRegex));
+        if (cMatches.length >= 2) {
+            let firstIndex = cMatches[0].index;
+            let lastMatch = cMatches[cMatches.length - 1];
+            let totalSpanEnd = lastMatch.index + lastMatch[0].length;
+
+            let cardsHtml = '';
+            cMatches.forEach((m, idx) => {
+                const numStr = m[1] || `${idx + 1}`;
+                const title = m[2].trim();
+                const meta = (m[3] || '').trim();
+                const desc = (m[4] || '').trim().replace(/\n+/g, ' ');
+                cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, null);
             });
 
             if (cardsHtml) {
@@ -1126,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatAssistantMessage(text) {
         if (!text) return "";
-        let working = text;
+        let working = beautifyMarkdownText(text);
 
         // 1. Extraer y proteger bloques visuales interactivos (acepta 1 a 3 backticks, con o sin saltos de línea)
         const visualBlocks = [];
@@ -1180,17 +1260,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 1.5 Detectar sección de sugerencias de exploración interactiva (JARVIS · ¿QUÉ TE APETECE EXPLORAR?)
-        const suggestionHeaderRegex = /(?:(?:JARVIS\s*[·•-]?\s*)?¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR\??|EXPLORAR:)\s*\n+((?:[ \t]*[-*•]\s*[^\n]+\n*)+)/i;
+        const suggestionHeaderRegex = /(?:(?:JARVIS\s*[·•-]?\s*)?¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR\??|EXPLORAR:)\s*\n+([\s\S]+?)(?=(?:\n*###|\n*__VISUAL_BLOCK_|\n*#|---|$))/i;
         const suggMatch = working.match(suggestionHeaderRegex);
         if (suggMatch) {
-            const rawList = suggMatch[1];
+            const rawList = suggMatch[1].trim();
             const items = [];
             const itemLines = rawList.split('\n');
             itemLines.forEach(l => {
-                const m = l.match(/^[ \t]*[-*•]\s*(.+)$/);
-                if (m) {
-                    const cleanItem = m[1].replace(/[*_~`]/g, '').trim();
-                    if (cleanItem) items.push(cleanItem);
+                const cleanItem = l.replace(/^[ \t]*[-*•]\s*/, '').replace(/[*_~`]/g, '').trim();
+                if (cleanItem && cleanItem.length < 60 && !cleanItem.startsWith('#')) {
+                    items.push(cleanItem);
                 }
             });
 
@@ -1439,7 +1518,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!uiState.activeAssistantBubble.dataset.rawText) {
                             uiState.activeAssistantBubble.dataset.rawText = "";
                         }
-                        uiState.activeAssistantBubble.dataset.rawText += (uiState.activeAssistantBubble.dataset.rawText ? " " : "") + event.text;
+                        const chunkText = event.text || "";
+                        const needsDoubleBreak = chunkText.startsWith("#") || chunkText.startsWith("###") || chunkText.startsWith("-") || chunkText.startsWith("*") || /^\d+\./.test(chunkText);
+                        const sep = !uiState.activeAssistantBubble.dataset.rawText ? "" : (needsDoubleBreak ? "\n\n" : " ");
+                        uiState.activeAssistantBubble.dataset.rawText += sep + chunkText;
                         uiState.activeAssistantBubble.innerHTML = formatAssistantMessage(uiState.activeAssistantBubble.dataset.rawText);
                         scrollToBottom();
                     }

@@ -88,3 +88,18 @@ def test_cards_block_converted_to_clean_markdown():
     assert 'Masa fermentada.' in cleaned
 
 
+def test_showcase_heading_separation_when_glued():
+    raw = "Introducción del tema. ### 01. Cacio e Pepe Lacio / Roma. Técnica pura. ### 02. Risotto alla Milanese Lombardía. Arroz sedoso. JARVIS · ¿QUÉ TE APETECE EXPLORAR? - Pastas"
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert "Introducción del tema.\n\n### 01. Cacio e Pepe" in cleaned
+    assert "\n\n### 02. Risotto alla Milanese" in cleaned
+    assert "\n\nJARVIS · ¿QUÉ TE APETECE EXPLORAR?" in cleaned
+
+
+def test_showcase_card_subtitle_separation():
+    raw = "### 01. Pizza napolitana **Nápoles · Campania** Masa fermentada."
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert "### 01. Pizza napolitana\n**Nápoles · Campania**" in cleaned
+
+
+
