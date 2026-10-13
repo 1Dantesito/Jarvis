@@ -600,14 +600,192 @@ document.addEventListener('DOMContentLoaded', () => {
     let continuousEnabled = true;
     const WAKE_WORD_REGEX = /(?:oye|hola|hey|ok|bueno)?\s*,?\s*(?:jarvis|jarbis|yarvis|llarvis|harvis|chavis|yervis|aura|awra|laura)\b/i;
 
+    // --- RENDERIZADO MARKDOWN AVANZADO (LISTAS, CÓDIGO, PÁRRAFOS TIPO CHATGPT) ---
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function parseInlineMarkdown(text) {
+        if (!text) return "";
+        let t = text;
+        // Negrita
+        t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        // Cursiva
+        t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        t = t.replace(/_([^_]+)_/g, '<em>$1</em>');
+        // Tachado
+        t = t.replace(/~~(.*?)~~/g, '<del>$1</del>');
+        // Enlaces [texto](url)
+        t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        return t;
+    }
+
+    function renderMarkdownNative(text) {
+        if (!text) return "";
+
+        // 1. Proteger bloques de código ```lang ... ```
+        const codeBlocks = [];
+        let src = text.replace(/```([a-zA-Z0-9_\-\+\.]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const idx = codeBlocks.length;
+            const langLabel = lang.trim() || "código";
+            const escapedCode = escapeHtml(code.trim());
+            codeBlocks.push(
+                `<div class="code-block-container">` +
+                    `<div class="code-header">` +
+                        `<span class="code-lang">${langLabel}</span>` +
+                        `<button class="code-copy-btn" onclick="navigator.clipboard.writeText(this.closest('.code-block-container').querySelector('code').innerText).then(()=>{this.textContent='Copiado!';setTimeout(()=>this.textContent='Copiar',2000)})">Copiar</button>` +
+                    `</div>` +
+                    `<pre><code class="language-${langLabel}">${escapedCode}</code></pre>` +
+                `</div>`
+            );
+            return `__CODE_BLOCK_${idx}__`;
+        });
+
+        // 2. Proteger código inline `code`
+        const inlineCodes = [];
+        src = src.replace(/`([^`\n]+)`/g, (match, code) => {
+            const idx = inlineCodes.length;
+            inlineCodes.push(`<code>${escapeHtml(code)}</code>`);
+            return `__INLINE_CODE_${idx}__`;
+        });
+
+        // 3. Procesar líneas y estructuras (Encabezados, Listas, Citas, Párrafos)
+        const lines = src.split(/\r?\n/);
+        let inUl = false;
+        let inOl = false;
+        let inBlockquote = false;
+        let result = [];
+
+        function closeOpenLists() {
+            if (inUl) { result.push('</ul>'); inUl = false; }
+            if (inOl) { result.push('</ol>'); inOl = false; }
+            if (inBlockquote) { result.push('</blockquote>'); inBlockquote = false; }
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            const trimmed = line.trim();
+
+            if (!trimmed) {
+                closeOpenLists();
+                continue;
+            }
+
+            // Encabezados Markdown
+            if (trimmed.startsWith('#### ')) {
+                closeOpenLists();
+                result.push(`<h4>${parseInlineMarkdown(trimmed.substring(5))}</h4>`);
+                continue;
+            } else if (trimmed.startsWith('### ')) {
+                closeOpenLists();
+                result.push(`<h3>${parseInlineMarkdown(trimmed.substring(4))}</h3>`);
+                continue;
+            } else if (trimmed.startsWith('## ')) {
+                closeOpenLists();
+                result.push(`<h2>${parseInlineMarkdown(trimmed.substring(3))}</h2>`);
+                continue;
+            } else if (trimmed.startsWith('# ')) {
+                closeOpenLists();
+                result.push(`<h1>${parseInlineMarkdown(trimmed.substring(2))}</h1>`);
+                continue;
+            }
+
+            // Separador horizontal
+            if (/^(?:---|\*\*\*|___)$/.test(trimmed)) {
+                closeOpenLists();
+                result.push('<hr>');
+                continue;
+            }
+
+            // Citas / Blockquotes
+            if (trimmed.startsWith('> ')) {
+                if (inUl) { result.push('</ul>'); inUl = false; }
+                if (inOl) { result.push('</ol>'); inOl = false; }
+                if (!inBlockquote) {
+                    result.push('<blockquote>');
+                    inBlockquote = true;
+                }
+                result.push(parseInlineMarkdown(trimmed.substring(2)));
+                continue;
+            } else if (inBlockquote) {
+                result.push('</blockquote>');
+                inBlockquote = false;
+            }
+
+            // Listas con viñetas (- o *)
+            const ulMatch = trimmed.match(/^[-*]\s+(.*)$/);
+            if (ulMatch) {
+                if (inOl) { result.push('</ol>'); inOl = false; }
+                if (!inUl) {
+                    result.push('<ul>');
+                    inUl = true;
+                }
+                result.push(`<li>${parseInlineMarkdown(ulMatch[1])}</li>`);
+                continue;
+            }
+
+            // Listas numeradas (1. , 2. )
+            const olMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+            if (olMatch) {
+                if (inUl) { result.push('</ul>'); inUl = false; }
+                if (!inOl) {
+                    result.push('<ol>');
+                    inOl = true;
+                }
+                result.push(`<li>${parseInlineMarkdown(olMatch[1])}</li>`);
+                continue;
+            }
+
+            // Placeholder de bloque de código
+            if (trimmed.startsWith('__CODE_BLOCK_') && trimmed.endsWith('__')) {
+                closeOpenLists();
+                result.push(trimmed);
+                continue;
+            }
+
+            // Párrafo normal
+            closeOpenLists();
+            result.push(`<p>${parseInlineMarkdown(trimmed)}</p>`);
+        }
+
+        closeOpenLists();
+
+        let output = result.join('\n');
+
+        // Restaurar bloques de código e inline
+        output = output.replace(/__CODE_BLOCK_(\d+)__/g, (match, idx) => codeBlocks[idx] || "");
+        output = output.replace(/__INLINE_CODE_(\d+)__/g, (match, idx) => inlineCodes[idx] || "");
+
+        return output;
+    }
+
     function formatAssistantMessage(text) {
         if (!text) return "";
-        let formatted = text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code>$1</code>');
-        return formatted;
+
+        // 1. Si marked.js está cargado (local en /static/marked.min.js), usar renderizado estándar GFM
+        if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+            try {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                return marked.parse(text);
+            } catch (err) {
+                console.warn("[Markdown] Error en marked.parse, usando parser nativo:", err);
+            }
+        }
+
+        // 2. Parser nativo avanzado para listas, bloques de código, encabezados y formato tipo ChatGPT
+        return renderMarkdownNative(text);
     }
+
 
     function setVoiceState(state, customText) {
         uiState.voiceState = state;
@@ -1380,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (response.ok && data.text) {
                     if (uiState.activeAssistantBubble) {
-                        uiState.activeAssistantBubble.textContent = data.text;
+                        uiState.activeAssistantBubble.innerHTML = formatAssistantMessage(data.text);
                     }
                     if (uiState.activeAssistantItem && (data.generated_image || data.generated_doc)) {
                         appendMediaAssets(uiState.activeAssistantItem, data.generated_image, data.generated_doc);
@@ -1405,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else {
                     if (uiState.activeAssistantBubble) {
-                        uiState.activeAssistantBubble.textContent = data.text || "No pude procesar la solicitud.";
+                        uiState.activeAssistantBubble.innerHTML = formatAssistantMessage(data.text || "No pude procesar la solicitud.");
                     }
                 }
             } catch (err) {

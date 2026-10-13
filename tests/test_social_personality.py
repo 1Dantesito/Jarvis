@@ -72,3 +72,33 @@ async def test_casual_and_empathy_prompts():
     res_tired = await orch.process_user_input("Estoy cansado")
     assert res_tired["success"] is True
     assert "ritmo" in res_tired["response_text"] or "organizar" in res_tired["response_text"]
+
+def test_companion_conversational_system_instruction():
+    orch = JarvisOrchestrator(primary_provider=MockAIProvider())
+    sys_prompt = orch._build_system_instruction("Cómo estructurar un proyecto")
+    assert "COMPAÑERA CONVERSACIONAL" in sys_prompt
+    assert "Calidez (70/100)" in sys_prompt
+    assert "Humor y espontaneidad (65/100)" in sys_prompt
+    assert "Iniciativa conversacional (60/100)" in sys_prompt
+    assert "FORMATO MARKDOWN" in sys_prompt
+    assert "REVISIÓN INTERNA PREVIA DE NATURALIDAD" in sys_prompt
+
+def test_markdown_frontend_assets_present():
+    from fastapi.testclient import TestClient
+    from api.server import app
+    client = TestClient(app)
+
+    res_html = client.get("/")
+    assert "marked.min.js" in res_html.text
+
+    res_js = client.get("/static/script.js")
+    assert "formatAssistantMessage" in res_js.text
+    assert "renderMarkdownNative" in res_js.text
+    assert "marked.parse" in res_js.text
+
+    res_css = client.get("/static/style.css")
+    assert ".msg-content ul" in res_css.text
+    assert ".msg-content ol" in res_css.text
+    assert ".msg-content pre" in res_css.text
+    assert ".msg-content blockquote" in res_css.text
+

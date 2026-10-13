@@ -267,6 +267,14 @@ class SocialResponseLayer:
             fn = tool_args.get("filename", "archivo")
             return f"Listo, he creado el archivo {fn} en tu Escritorio."
 
+        elif tool_name == "solve_telematica_lab":
+            pkt_file = data.get("pkt_file", "KRONOS_TELEMATICA_VLANS.pkt")
+            return f"Listo. He resuelto la guía y generado el archivo {pkt_file} en tu Escritorio con toda la topología y configuraciones."
+
+        elif tool_name == "generate_packet_tracer_pkt":
+            fn = tool_args.get("filename", "laboratorio.pkt")
+            return f"Listo. He generado el archivo Packet Tracer {fn} en tu Escritorio."
+
         elif tool_name == "open_url":
             return f"Abriendo enlace en tu navegador."
 
