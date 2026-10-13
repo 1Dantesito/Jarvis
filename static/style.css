@@ -1301,6 +1301,267 @@ body {
     width: 100%;
 }
 
+/* 1.1 Tarjetas Showcase Horizontales Estilo Guía Visual */
+.jarvis-showcase-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 16px 0;
+    width: 100%;
+}
+
+.jarvis-showcase-card {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: stretch;
+    background: linear-gradient(135deg, rgba(14, 27, 48, 0.82) 0%, rgba(7, 15, 29, 0.92) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.16);
+    border-left: 3px solid #00F2FE;
+    border-radius: 14px;
+    padding: 14px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.jarvis-showcase-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 242, 254, 0.45);
+    box-shadow: 0 12px 30px rgba(0, 242, 254, 0.14);
+}
+
+.jarvis-showcase-card .showcase-thumb-col {
+    width: 124px;
+    min-width: 124px;
+    max-width: 130px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.jarvis-showcase-card .showcase-thumb-box {
+    width: 100%;
+    height: 94px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.12), rgba(79, 70, 229, 0.22));
+    border: 1px solid rgba(0, 242, 254, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jarvis-showcase-card .showcase-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.jarvis-showcase-card:hover .showcase-thumb-img {
+    transform: scale(1.05);
+}
+
+.jarvis-showcase-card .showcase-thumb-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, rgba(0, 242, 254, 0.18) 0%, rgba(10, 20, 36, 0.95) 75%);
+}
+
+.jarvis-showcase-card .showcase-fallback-icon {
+    font-size: 38px;
+    filter: drop-shadow(0 4px 10px rgba(0, 242, 254, 0.35));
+}
+
+.jarvis-showcase-card .showcase-fav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    padding: 5px 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: var(--text-secondary, #94A3B8);
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.jarvis-showcase-card .showcase-fav-btn:hover {
+    background: rgba(0, 242, 254, 0.12);
+    border-color: rgba(0, 242, 254, 0.35);
+    color: #00F2FE;
+}
+
+.jarvis-showcase-card .showcase-fav-btn.favorited {
+    background: rgba(244, 63, 94, 0.15);
+    border-color: rgba(244, 63, 94, 0.45);
+    color: #FB7185;
+}
+
+.jarvis-showcase-card .showcase-fav-btn.favorited .fav-icon {
+    fill: currentColor;
+}
+
+.jarvis-showcase-card .showcase-body-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    justify-content: center;
+}
+
+.jarvis-showcase-card .showcase-pill-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.jarvis-showcase-card .showcase-pill {
+    font-family: var(--font-heading, 'Orbitron', monospace);
+    font-size: 11px;
+    font-weight: 800;
+    color: #00F2FE;
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.32);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.6px;
+    display: inline-block;
+}
+
+.jarvis-showcase-card .showcase-title {
+    font-family: var(--font-heading, sans-serif);
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0 0 2px 0;
+    line-height: 1.35;
+}
+
+.jarvis-showcase-card .showcase-meta {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent-secondary, #38E1FF);
+    opacity: 0.92;
+    display: block;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+}
+
+.jarvis-showcase-card .showcase-desc {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #CBD5E1;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .jarvis-showcase-card {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .jarvis-showcase-card .showcase-thumb-col {
+        width: 100%;
+        max-width: none;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .jarvis-showcase-card .showcase-thumb-box {
+        width: 80px;
+        height: 60px;
+    }
+    .jarvis-showcase-card .showcase-fav-btn {
+        width: auto;
+        padding: 6px 12px;
+    }
+}
+
+/* 1.2 Bloque de Sugerencias Interactivas (Chips de Exploración) */
+.jarvis-suggestion-chips-block {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed rgba(0, 242, 254, 0.22);
+    width: 100%;
+}
+
+.jarvis-suggestion-chips-block .chips-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #00F2FE;
+    margin-bottom: 10px;
+}
+
+.jarvis-suggestion-chips-block .chips-header .chips-prefix {
+    color: #00F2FE;
+}
+
+.jarvis-suggestion-chips-block .chips-header .chips-sep {
+    opacity: 0.6;
+}
+
+.jarvis-suggestion-chips-block .chips-header .chips-title {
+    color: #E2E8F0;
+}
+
+.jarvis-suggestion-chips-block .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.jarvis-suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.28);
+    color: #E2E8F0;
+    padding: 7px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    font-family: inherit;
+}
+
+.jarvis-suggestion-chip:hover {
+    background: rgba(0, 242, 254, 0.22);
+    border-color: #00F2FE;
+    color: #FFFFFF;
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 14px rgba(0, 242, 254, 0.25);
+}
+
+.jarvis-suggestion-chip .chip-arrow {
+    color: #00F2FE;
+    transition: transform 0.2s ease;
+}
+
+.jarvis-suggestion-chip:hover .chip-arrow {
+    transform: translateX(2.5px);
+}
+
 .jarvis-bento-card {
     background: linear-gradient(145deg, rgba(12, 26, 48, 0.85) 0%, rgba(6, 14, 28, 0.92) 100%);
     border: 1px solid rgba(0, 242, 254, 0.16);

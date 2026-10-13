@@ -73,11 +73,18 @@ def test_checklist_block_speech_sanitization():
     assert "```" not in speech
     assert "items" not in speech
 
-def test_cards_block_preservation_in_markdown():
-    raw = 'Listado:\n```cards\n[{"title": "Pizza: 1. masa 2. salsa"}]\n```'
+def test_code_block_preservation_in_markdown():
+    raw = 'Código:\n```python\n# paso 1. test\nx = 1\n```'
     cleaned = ResponseSanitizer.sanitize(raw)
-    # El JSON dentro del bloque de código cards no debe ser alterado destructivamente
-    assert '```cards' in cleaned
-    assert '"title": "Pizza: 1. masa 2. salsa"' in cleaned
+    assert '```python' in cleaned
+    assert 'x = 1' in cleaned
+
+def test_cards_block_converted_to_clean_markdown():
+    raw = 'Listado:\n```cards\n[{"title": "Pizza Napoletana", "subtitle": "Nápoles", "desc": "Masa fermentada."}]\n```'
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert '```cards' not in cleaned
+    assert '### 01. Pizza Napoletana' in cleaned
+    assert '**Nápoles**' in cleaned
+    assert 'Masa fermentada.' in cleaned
 
 

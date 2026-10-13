@@ -73,14 +73,72 @@ class ResponseSanitizer:
         s = re.sub(r'[ \t]{2,}', ' ', s)
         s = re.sub(r'\n{3,}', '\n\n', s).strip()
 
-        # 6. Embellecer formato Markdown (separar listas pegadas en renglones limpios)
+        # 6. Convertir cualquier bloque de tarjetas JSON residual a Markdown Showcase limpio
+        s = cls.convert_cards_json_to_clean_markdown(s)
+
+        # 7. Embellecer formato Markdown (separar listas pegadas en renglones limpios)
         s = cls.format_beautiful_markdown(s)
 
-        # 7. Si después de limpiar el texto queda vacío o solo signos
+        # 8. Si después de limpiar el texto queda vacío o solo signos
         if not s or s in [".", ",", "!", "?", "-", ":"]:
             return "Entendido."
 
         return s
+
+    @classmethod
+    def convert_cards_json_to_clean_markdown(cls, text: str) -> str:
+        """
+        Convierte bloques ```cards [...]``` o ```flashcards [...]``` en Markdown Showcase limpio.
+        Garantiza que ningún bloque JSON crudo de tarjetas se filtre a la vista del usuario.
+        """
+        if not text or not any(k in text for k in ("cards", "flashcards", "bento")):
+            return text
+
+        def _repl_cards(match):
+            raw_body = match.group(1).strip()
+            raw_body = re.sub(r'^`+|`+$', '', raw_body).strip()
+            import json
+            items = None
+            try:
+                data = json.loads(raw_body)
+                if isinstance(data, list):
+                    items = data
+                elif isinstance(data, dict):
+                    items = data.get("cards") or data.get("items")
+            except Exception:
+                start = raw_body.find('[')
+                end = raw_body.rfind(']')
+                if start != -1 and end != -1 and end > start:
+                    try:
+                        data = json.loads(raw_body[start:end+1])
+                        if isinstance(data, list):
+                            items = data
+                    except Exception:
+                        pass
+
+            if not items or not isinstance(items, list):
+                return match.group(0)
+
+            clean_cards = []
+            for idx, item in enumerate(items, 1):
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("title") or item.get("name") or f"Opción {idx}"
+                subtitle = item.get("subtitle") or item.get("badge") or ""
+                desc = item.get("desc") or item.get("description") or item.get("content") or ""
+                card_lines = [f"### {idx:02d}. {title}"]
+                if subtitle:
+                    card_lines.append(f"**{subtitle}**")
+                if desc:
+                    card_lines.append(desc)
+                clean_cards.append("\n".join(card_lines))
+
+            if clean_cards:
+                return "\n\n" + "\n\n".join(clean_cards) + "\n\n"
+            return match.group(0)
+
+        pattern = re.compile(r'```(?:cards|flashcards|bento)\b\s*([\s\S]*?)(?:```|$)', re.IGNORECASE)
+        return pattern.sub(_repl_cards, text)
 
     @classmethod
     def format_beautiful_markdown(cls, text: str) -> str:

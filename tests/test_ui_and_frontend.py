@@ -368,6 +368,10 @@ def test_visual_components_cards_comparativa_checklist_in_css_and_js():
     css = res_css.text
     assert ".jarvis-cards-grid" in css
     assert ".jarvis-bento-card" in css
+    assert ".jarvis-showcase-grid" in css
+    assert ".jarvis-showcase-card" in css
+    assert ".jarvis-suggestion-chips-block" in css
+    assert ".jarvis-suggestion-chip" in css
     assert ".jarvis-table-card" in css
     assert ".jarvis-glass-table" in css
     assert ".jarvis-checklist-card" in css
@@ -379,6 +383,10 @@ def test_visual_components_cards_comparativa_checklist_in_css_and_js():
     assert res_js.status_code == 200
     js = res_js.text
     assert "renderCardsBlock" in js
+    assert "buildShowcaseCardHtml" in js
+    assert "extractShowcaseCardsFromMarkdown" in js
+    assert "window.toggleCardFav" in js
+    assert "window.sendSuggestedPrompt" in js
     assert "renderComparativaBlock" in js
     assert "renderChecklistBlock" in js
     assert "window.toggleChecklistItem" in js

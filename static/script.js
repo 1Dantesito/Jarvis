@@ -800,6 +800,173 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.toggleCardFav = function(btn) {
+        if (!btn) return;
+        btn.classList.toggle('favorited');
+        const isFav = btn.classList.contains('favorited');
+        const textSpan = btn.querySelector('.fav-text');
+        const svgIcon = btn.querySelector('.fav-icon');
+        if (textSpan) {
+            textSpan.textContent = isFav ? 'Guardado' : 'Añadir a Favoritos';
+        }
+        if (svgIcon) {
+            svgIcon.setAttribute('fill', isFav ? 'currentColor' : 'none');
+        }
+    };
+
+    window.sendSuggestedPrompt = function(promptText) {
+        if (!promptText) return;
+        const input = document.getElementById('user-input');
+        if (input) {
+            input.value = promptText;
+            input.focus();
+        }
+        const form = document.getElementById('chat-form');
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    };
+
+    function getThemedFallbackIcon(title, meta, desc) {
+        const combined = `${title || ''} ${meta || ''} ${desc || ''}`.toLowerCase();
+        if (combined.includes('pizza')) return '🍕';
+        if (combined.includes('carbonara') || combined.includes('pasta') || combined.includes('espagueti') || combined.includes('lasagna')) return '🍝';
+        if (combined.includes('risotto') || combined.includes('arroz') || combined.includes('paella')) return '🥘';
+        if (combined.includes('tiramis') || combined.includes('postre') || combined.includes('dulce') || combined.includes('pastel') || combined.includes('gelato')) return '🍰';
+        if (combined.includes('café') || combined.includes('espresso') || combined.includes('cappuccino')) return '☕';
+        if (combined.includes('vino') || combined.includes('trago') || combined.includes('cocktail') || combined.includes('bebida')) return '🍷';
+        if (combined.includes('queso') || combined.includes('mozzarella') || combined.includes('parmesano')) return '🧀';
+        if (combined.includes('pan') || combined.includes('focaccia') || combined.includes('ciabatta')) return '🥖';
+        if (combined.includes('carne') || combined.includes('bife') || combined.includes('steak') || combined.includes('hamburguesa')) return '🥩';
+        if (combined.includes('pescado') || combined.includes('marisco') || combined.includes('sushi') || combined.includes('salmón')) return '🍣';
+        if (combined.includes('ensalada') || combined.includes('vegetal') || combined.includes('tomate')) return '🥗';
+        if (combined.includes('código') || combined.includes('python') || combined.includes('software') || combined.includes('red') || combined.includes('servidor')) return '💻';
+        if (combined.includes('música') || combined.includes('cancion') || combined.includes('rock') || combined.includes('álbum')) return '🎵';
+        if (combined.includes('libro') || combined.includes('estudio') || combined.includes('tema')) return '📚';
+        return '✦';
+    }
+
+    function buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl) {
+        const numDisplay = (numStr && String(numStr).length === 1) ? `0${numStr}` : (numStr || '01');
+        const safeTitle = escapeHtml(title || 'Recomendación');
+        const safeMeta = meta ? escapeHtml(meta) : '';
+        const safeDesc = escapeHtml(desc || '');
+        const icon = getThemedFallbackIcon(title, meta, desc);
+
+        let thumbContent = '';
+        if (imgUrl && (imgUrl.startsWith('http') || imgUrl.startsWith('/') || imgUrl.startsWith('data:'))) {
+            thumbContent = `<img src="${escapeHtml(imgUrl)}" alt="${safeTitle}" class="showcase-thumb-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="showcase-thumb-fallback" style="display:none;"><span class="showcase-fallback-icon">${icon}</span></div>`;
+        } else {
+            thumbContent = `<div class="showcase-thumb-fallback"><span class="showcase-fallback-icon">${icon}</span></div>`;
+        }
+
+        return `
+            <div class="jarvis-showcase-card">
+                <div class="showcase-thumb-col">
+                    <div class="showcase-thumb-box">
+                        ${thumbContent}
+                    </div>
+                    <button type="button" class="showcase-fav-btn" onclick="window.toggleCardFav(this)" title="Añadir a Favoritos">
+                        <svg class="fav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span class="fav-text">Añadir a Favoritos</span>
+                    </button>
+                </div>
+                <div class="showcase-body-col">
+                    <div class="showcase-pill-row">
+                        <span class="showcase-pill">${escapeHtml(numDisplay)}</span>
+                    </div>
+                    <h4 class="showcase-title">${safeTitle}</h4>
+                    ${safeMeta ? `<span class="showcase-meta">${safeMeta}</span>` : ''}
+                    <p class="showcase-desc">${safeDesc}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function extractShowcaseCardsFromMarkdown(text, visualBlocks) {
+        if (!text) return text;
+
+        // Patrón A: Encabezados numerados tipo ### 01. Título o ### 1. Título
+        const cardBlockRegex = /(?:^|\n)(###\s*0?\d+\.\s*[^\n]+[\s\S]*?)(?=(?:\n*###\s*0?\d+\.\s*|\n*__VISUAL_BLOCK_|\n*JARVIS|\n*¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|\n*#|\n*---|$))/gi;
+        const matches = Array.from(text.matchAll(cardBlockRegex));
+
+        if (matches.length >= 1) {
+            let firstIndex = matches[0].index;
+            let lastMatch = matches[matches.length - 1];
+            let totalSpanEnd = lastMatch.index + lastMatch[0].length;
+
+            let cardsHtml = '';
+            matches.forEach((m, idx) => {
+                const rawItem = m[1].trim();
+                const headerMatch = rawItem.match(/^###\s*0?(\d+)\.\s*([^\n]+)/i);
+                const numStr = headerMatch ? headerMatch[1] : `${idx + 1}`;
+                const title = headerMatch ? headerMatch[2].trim() : `Opción ${idx + 1}`;
+
+                let rest = rawItem.replace(/^###\s*0?\d+\.\s*[^\n]+\n*/i, '').trim();
+
+                let imgUrl = null;
+                const imgMatch = rest.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+                if (imgMatch) {
+                    imgUrl = imgMatch[2].trim();
+                    rest = rest.replace(imgMatch[0], '').trim();
+                }
+
+                let meta = '';
+                const metaMatch = rest.match(/^\*\*([^\*\n]+)\*\*/m);
+                if (metaMatch) {
+                    meta = metaMatch[1].trim();
+                    rest = rest.replace(metaMatch[0], '').trim();
+                }
+
+                const desc = rest.replace(/\n+/g, ' ').trim();
+                cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl);
+            });
+
+            if (cardsHtml) {
+                const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
+                const idx = visualBlocks.length;
+                visualBlocks.push(gridHtml);
+
+                const before = text.substring(0, firstIndex);
+                const after = text.substring(totalSpanEnd);
+                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+            }
+        }
+
+        // Patrón B: Tarjetas con número suelto (ej. 01\n\nPizza napolitana\n\nNápoles · Campania)
+        const patternBRegex = /(?:^|\n)[ \t]*(?:0?(\d{1,2}))\s*\n+([A-ZÁÉÍÓÚ][^\n]+)\n+(?:!\[[^\]]*\]\(([^)]+)\)\s*\n+)?(?:\*\*([^\*\n]+)\*\*|([A-ZÁÉÍÓÚa-zñáéíóú\s]+·[^\n]+))\n+([^\n]+(?:\n+(?![0-9]{1,2}\s*\n|[A-ZÁÉÍÓÚ·\s]+·|JARVIS)[^\n]+)*)/g;
+        const bMatches = Array.from(text.matchAll(patternBRegex));
+        if (bMatches.length >= 2) {
+            let firstIndex = bMatches[0].index;
+            let lastMatch = bMatches[bMatches.length - 1];
+            let totalSpanEnd = lastMatch.index + lastMatch[0].length;
+
+            let cardsHtml = '';
+            bMatches.forEach((m, idx) => {
+                const numStr = m[1] || `${idx + 1}`;
+                const title = m[2].trim();
+                const imgUrl = m[3] ? m[3].trim() : null;
+                const meta = (m[4] || m[5] || '').trim();
+                const desc = (m[6] || '').trim().replace(/\n+/g, ' ');
+                cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl);
+            });
+
+            if (cardsHtml) {
+                const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
+                const idx = visualBlocks.length;
+                visualBlocks.push(gridHtml);
+
+                const before = text.substring(0, firstIndex);
+                const after = text.substring(totalSpanEnd);
+                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+            }
+        }
+
+        return text;
+    }
+
     function extractJsonArray(str) {
         if (!str) return null;
         let s = str.trim();
@@ -857,33 +1024,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCardsBlock(jsonStr) {
         const items = extractJsonArray(jsonStr);
         if (!items || !Array.isArray(items) || items.length === 0) return null;
-        let html = '<div class="jarvis-cards-grid">';
+        let cardsHtml = '';
         items.forEach((item, idx) => {
-            const title = escapeHtml(item.title || `Opción ${idx + 1}`);
-            const subtitle = item.subtitle ? `<span class="card-subtitle">${escapeHtml(item.subtitle)}</span>` : '';
-            const badge = item.badge ? `<span class="card-pill-badge ${item.color || 'cyan'}">${escapeHtml(item.badge)}</span>` : '';
-            const icon = item.icon ? `<span class="card-icon">${escapeHtml(item.icon)}</span>` : `<span class="card-number-badge">${idx + 1}</span>`;
+            const numStr = `${idx + 1}`;
+            const title = item.title || item.name || `Opción ${idx + 1}`;
+            const meta = item.subtitle || item.badge || item.region || item.category || '';
             const desc = item.desc || item.content || item.description || '';
-            const descHtml = escapeHtml(desc);
-
-            html += `
-                <div class="jarvis-bento-card">
-                    <div class="card-header">
-                        <div class="card-icon-wrap">${icon}</div>
-                        <div class="card-title-group">
-                            <h4 class="card-title">${title}</h4>
-                            ${subtitle}
-                        </div>
-                        ${badge}
-                    </div>
-                    <div class="card-body">
-                        <p class="card-desc">${descHtml}</p>
-                    </div>
-                </div>
-            `;
+            const img = item.image || item.img || item.imgUrl || null;
+            cardsHtml += buildShowcaseCardHtml(numStr, title, meta, desc, img);
         });
-        html += '</div>';
-        return html;
+        return `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
     }
 
     function renderComparativaBlock(jsonStr) {
@@ -1028,6 +1178,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 return rendered;
             }
         }
+
+        // 1.5 Detectar sección de sugerencias de exploración interactiva (JARVIS · ¿QUÉ TE APETECE EXPLORAR?)
+        const suggestionHeaderRegex = /(?:(?:JARVIS\s*[·•-]?\s*)?¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR\??|EXPLORAR:)\s*\n+((?:[ \t]*[-*•]\s*[^\n]+\n*)+)/i;
+        const suggMatch = working.match(suggestionHeaderRegex);
+        if (suggMatch) {
+            const rawList = suggMatch[1];
+            const items = [];
+            const itemLines = rawList.split('\n');
+            itemLines.forEach(l => {
+                const m = l.match(/^[ \t]*[-*•]\s*(.+)$/);
+                if (m) {
+                    const cleanItem = m[1].replace(/[*_~`]/g, '').trim();
+                    if (cleanItem) items.push(cleanItem);
+                }
+            });
+
+            if (items.length > 0) {
+                let chipsHtml = `
+                    <div class="jarvis-suggestion-chips-block">
+                        <div class="chips-header">
+                            <span class="chips-prefix">JARVIS</span>
+                            <span class="chips-sep">·</span>
+                            <span class="chips-title">¿QUÉ TE APETECE EXPLORAR?</span>
+                        </div>
+                        <div class="chips-row">
+                `;
+                items.forEach(it => {
+                    const escapedPrompt = it.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    chipsHtml += `
+                        <button type="button" class="jarvis-suggestion-chip" onclick="window.sendSuggestedPrompt('${escapedPrompt}')">
+                            <span>${escapeHtml(it)}</span>
+                            <svg class="chip-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    `;
+                });
+                chipsHtml += `</div></div>`;
+                const sIdx = visualBlocks.length;
+                visualBlocks.push(chipsHtml);
+                working = working.replace(suggMatch[0], `\n\n__VISUAL_BLOCK_${sIdx}__\n\n`);
+            }
+        }
+
+        // 1.6 Detectar y transformar tarjetas showcase de Markdown en componentes visuales interactivos
+        working = extractShowcaseCardsFromMarkdown(working, visualBlocks);
 
         // 2. Normalizar texto markdown general
         const clean = beautifyMarkdownText(working);
