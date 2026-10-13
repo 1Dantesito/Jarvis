@@ -1085,18 +1085,19 @@ body {
 .message-item.jarvis { 
     align-self: flex-start;
     align-items: flex-start;
-    max-width: 88%;
+    max-width: min(840px, 86%);
 }
 
 .bubble {
-    padding: 15px 20px;
-    font-size: 14.5px;
-    line-height: 1.6;
+    padding: 16px 22px;
+    font-size: 15px;
+    line-height: 1.68;
     word-break: break-word;
     width: fit-content;
     max-width: 100%;
     height: auto;
     font-family: var(--font-body);
+    letter-spacing: 0.15px;
 }
 
 .message-item.user .bubble {
@@ -1112,14 +1113,15 @@ body {
 }
 
 .message-item.jarvis .bubble {
-    background: rgba(5, 12, 24, 0.84) !important;
+    background: linear-gradient(145deg, rgba(8, 18, 36, 0.88) 0%, rgba(5, 12, 24, 0.94) 100%) !important;
     backdrop-filter: blur(28px) !important;
     -webkit-backdrop-filter: blur(28px) !important;
     color: #F1F5F9 !important;
-    border: 1px solid rgba(255, 255, 255, 0.10) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(0, 242, 254, 0.18) !important;
+    border-top: 1.5px solid rgba(0, 242, 254, 0.45) !important;
     border-radius: 20px 20px 20px 4px;
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.58), 0 0 24px rgba(0, 242, 254, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 /* Micro-cabecera y metadatos dentro de la burbuja */
@@ -1183,27 +1185,34 @@ body {
 /* --- ESTILOS DE TIPOGRAFÍA Y MARKDOWN RICO (ESTILO CHATGPT) --- */
 .msg-content {
     color: inherit;
-    font-size: 14.5px;
-    line-height: 1.65;
+    font-size: 15px;
+    line-height: 1.68;
     word-break: break-word;
+    letter-spacing: 0.15px;
 }
 
 .msg-content p {
-    margin: 0 0 10px 0;
+    margin: 0 0 12px 0;
 }
 
 .msg-content p:last-child {
     margin-bottom: 0;
 }
 
+.msg-content strong {
+    color: #FFFFFF;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+}
+
 /* Listas ordenadas y desordenadas con indentación y bullets nítidos */
 .msg-content ul, 
 .msg-content ol {
-    margin: 8px 0 12px 0;
-    padding-left: 24px;
+    margin: 12px 0 16px 0;
+    padding-left: 28px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
 }
 
 .msg-content ul {
@@ -1215,14 +1224,22 @@ body {
 }
 
 .msg-content li {
-    line-height: 1.55;
-    margin-bottom: 3px;
-    color: inherit;
+    line-height: 1.65;
+    margin-bottom: 4px;
+    color: #E2E8F0;
+    padding-left: 4px;
 }
 
 .msg-content li::marker {
     color: var(--accent-primary, #00F2FE);
     font-weight: 700;
+}
+
+.msg-content li strong {
+    color: #F8FAFC;
+    font-weight: 700;
+    border-bottom: 1px dotted rgba(0, 242, 254, 0.35);
+    padding-bottom: 1px;
 }
 
 .msg-content li > p {

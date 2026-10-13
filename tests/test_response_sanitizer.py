@@ -38,3 +38,23 @@ def test_speech_friendly_expansion():
     assert "por ciento" in speech
     assert "dólares" in speech
     assert "versus" in speech
+
+def test_beautiful_markdown_numbered_list():
+    raw = "Aquí tienes cosas cotidianas: 1. **Café**: Se enfría rápido. 2. **Llaves**: Se pierden siempre. ¿Cuál buscas?"
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert "cotidianas:\n\n1. **Café**" in cleaned
+    assert "rápido.\n\n2. **Llaves**" in cleaned
+    assert "siempre.\n\n¿Cuál buscas?" in cleaned
+
+def test_beautiful_markdown_bullet_list():
+    raw = "Recomendaciones: - Primer consejo - Segundo consejo"
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert "Recomendaciones:\n\n- Primer consejo" in cleaned
+    assert "consejo\n\n- Segundo consejo" in cleaned
+
+def test_beautiful_markdown_unicode_bullets():
+    raw = "Tareas:\n• Comprar leche\n· Pagar internet"
+    cleaned = ResponseSanitizer.sanitize(raw)
+    assert "- Comprar leche" in cleaned
+    assert "- Pagar internet" in cleaned
+

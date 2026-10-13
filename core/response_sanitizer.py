@@ -73,11 +73,46 @@ class ResponseSanitizer:
         s = re.sub(r'[ \t]{2,}', ' ', s)
         s = re.sub(r'\n{3,}', '\n\n', s).strip()
 
-        # 6. Si después de limpiar el texto queda vacío o solo signos
+        # 6. Embellecer formato Markdown (separar listas pegadas en renglones limpios)
+        s = cls.format_beautiful_markdown(s)
+
+        # 7. Si después de limpiar el texto queda vacío o solo signos
         if not s or s in [".", ",", "!", "?", "-", ":"]:
             return "Entendido."
 
         return s
+
+    @classmethod
+    def format_beautiful_markdown(cls, text: str) -> str:
+        """
+        Formatea y embellece la estructura del texto para presentación en pantalla.
+        Convierte listas pegadas o inline (ej. ': 1. ... 2. ...') en listas Markdown
+        con saltos de línea elegantes y separación de párrafos.
+        """
+        if not text:
+            return ""
+
+        s = text
+        # 1. Separar encabezado previo a una lista numerada (ej. 'menos pensado: 1. ' -> 'menos pensado:\n\n1. ')
+        s = re.sub(r'([:;])\s+(?=\d+\.\s+)', r'\1\n\n', s)
+
+        # 2. Separar elementos de lista numerada pegados en el mismo renglón (ej. 'intento. 2. ' -> 'intento.\n\n2. ')
+        s = re.sub(r'([.?!])\s+(?=\d+\.\s+)', r'\1\n\n', s)
+
+        # 3. Separar elementos de viñetas pegados (ej. 'opciones: - ' o '. - ')
+        s = re.sub(r'([:;.?!])\s+(?=[-•*]\s+)', r'\1\n\n', s)
+        s = re.sub(r'(?<=[^\s:;.?!])\s+[-•*]\s+(?=[A-ZÁÉÍÓÚ]|\*\*)', r'\n\n- ', s)
+
+        # 4. Normalizar viñetas unicode (•, ·) a guiones markdown estándar
+        s = re.sub(r'(?:^|\n)[ \t]*[•·]\s+', r'\n- ', s)
+
+        # 5. Separar preguntas o conclusiones finales después de una lista numerada
+        s = re.sub(r'(\d+\.[^\n]+?[.?!])\s+([¿¡A-ZÁÉÍÓÚ][^\n]{3,})', r'\1\n\n\2', s)
+
+        # 6. Normalizar saltos excesivos a máximo 2 saltos
+        s = re.sub(r'\n{3,}', '\n\n', s)
+
+        return s.strip()
 
     @classmethod
     def sanitize_for_speech(cls, text: str, user_name: Optional[str] = None) -> str:

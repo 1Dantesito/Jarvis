@@ -766,8 +766,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return output;
     }
 
+    function beautifyMarkdownText(text) {
+        if (!text) return "";
+        let s = text;
+        // 1. Separar encabezado previo a una lista numerada (ej. ': 1. ' -> ':\n\n1. ')
+        s = s.replace(/([:;])\s+(?=\d+\.\s+)/g, "$1\n\n");
+        // 2. Separar elementos de lista numerada pegados en el mismo renglón (ej. '. 2. ' -> '.\n\n2. ')
+        s = s.replace(/([.?!])\s+(?=\d+\.\s+)/g, "$1\n\n");
+        // 3. Separar viñetas pegadas tras puntuación (ej. ': - ' -> ':\n\n- ')
+        s = s.replace(/([:;.?!])\s+(?=[-•*]\s+)/g, "$1\n\n- ");
+        // Separar viñetas pegadas sin puntuación cuando van seguidas de mayúscula o negrita
+        s = s.replace(/(?<=[^\s:;.?!])\s+[-•*]\s+(?=[A-ZÁÉÍÓÚ]|\*\*)/g, "\n\n- ");
+        // 4. Normalizar viñetas unicode (•, ·) a guiones markdown estándar
+        s = s.replace(/(?:^|\n)[ \t]*[•·]\s+/g, "\n- ");
+        // 5. Separar preguntas o conclusiones finales después de una lista numerada
+        s = s.replace(/(\d+\.[^\n]+?[.?!])\s+([¿¡A-ZÁÉÍÓÚ][^\n]{3,})/g, "$1\n\n$2");
+        // 6. Normalizar saltos excesivos a máximo 2 saltos
+        s = s.replace(/\n{3,}/g, "\n\n");
+        return s.trim();
+    }
+
     function formatAssistantMessage(text) {
         if (!text) return "";
+        const clean = beautifyMarkdownText(text);
 
         // 1. Si marked.js está cargado (local en /static/marked.min.js), usar renderizado estándar GFM
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
@@ -776,14 +797,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     breaks: true,
                     gfm: true
                 });
-                return marked.parse(text);
+                return marked.parse(clean);
             } catch (err) {
                 console.warn("[Markdown] Error en marked.parse, usando parser nativo:", err);
             }
         }
 
         // 2. Parser nativo avanzado para listas, bloques de código, encabezados y formato tipo ChatGPT
-        return renderMarkdownNative(text);
+        return renderMarkdownNative(clean);
     }
 
 
