@@ -98,7 +98,7 @@ class ResponseSanitizer:
             blocks.append(m.group(0))
             return f"__CODE_BLOCK_PRESERVE_{len(blocks)-1}__"
 
-        s = re.sub(r'```[a-zA-Z0-9_\-]*\n[\s\S]*?```', _save_block, text)
+        s = re.sub(r'```[a-zA-Z0-9_\-]*\s*[\s\S]*?```', _save_block, text)
 
         # 1. Separar encabezado previo a una lista numerada (ej. 'menos pensado: 1. ' -> 'menos pensado:\n\n1. ')
         s = re.sub(r'([:;])\s+(?=\d+\.\s+)', r'\1\n\n', s)
@@ -139,6 +139,7 @@ class ResponseSanitizer:
         # Convertir bloques interactivos JSON en habla natural
         def _speech_cards(m):
             raw_json = m.group(1).strip()
+            raw_json = re.sub(r'^`+|`+$', '', raw_json).strip()
             try:
                 import json
                 items = json.loads(raw_json)
@@ -149,11 +150,22 @@ class ResponseSanitizer:
                             return " Aquí tienes: " + ", ".join(titles) + ". "
                         return " Te he preparado varias opciones en tarjetas en tu pantalla. "
             except Exception:
-                pass
+                start = raw_json.find('[')
+                end = raw_json.rfind(']')
+                if start != -1 and end != -1 and end > start:
+                    try:
+                        import json
+                        items = json.loads(raw_json[start:end+1])
+                        titles = [item.get("title", "") for item in items if isinstance(item, dict) and item.get("title")]
+                        if titles:
+                            return " Aquí tienes: " + ", ".join(titles[:4]) + ". "
+                    except Exception:
+                        pass
             return " Te muestro las tarjetas detalladas en pantalla. "
 
         def _speech_checklist(m):
             raw_json = m.group(1).strip()
+            raw_json = re.sub(r'^`+|`+$', '', raw_json).strip()
             try:
                 import json
                 data = json.loads(raw_json)
@@ -165,6 +177,7 @@ class ResponseSanitizer:
 
         def _speech_comparativa(m):
             raw_json = m.group(1).strip()
+            raw_json = re.sub(r'^`+|`+$', '', raw_json).strip()
             try:
                 import json
                 data = json.loads(raw_json)
@@ -174,11 +187,11 @@ class ResponseSanitizer:
                 pass
             return " He organizado el cuadro comparativo en pantalla. "
 
-        s = re.sub(r'```(?:cards|flashcards)\s*\n([\s\S]*?)```', _speech_cards, s)
-        s = re.sub(r'```checklist\s*\n([\s\S]*?)```', _speech_checklist, s)
-        s = re.sub(r'```(?:comparativa|comparison)\s*\n([\s\S]*?)```', _speech_comparativa, s)
+        s = re.sub(r'```(?:cards|flashcards|bento)\b\s*([\s\S]*?)(?:```|$)', _speech_cards, s)
+        s = re.sub(r'```checklist\b\s*([\s\S]*?)(?:```|$)', _speech_checklist, s)
+        s = re.sub(r'```(?:comparativa|comparison)\b\s*([\s\S]*?)(?:```|$)', _speech_comparativa, s)
         # Limpiar cualquier otro bloque de código restante para que no lea código crudo
-        s = re.sub(r'```[a-zA-Z0-9_\-]*\n[\s\S]*?```', ' ', s)
+        s = re.sub(r'```[a-zA-Z0-9_\-]*\s*[\s\S]*?(?:```|$)', ' ', s)
 
         s = cls.sanitize(s, user_name=user_name)
         # Limpiar símbolos markdown que no deben ser leídos en voz alta

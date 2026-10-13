@@ -800,143 +800,187 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    function renderCardsBlock(jsonStr) {
-        try {
-            const items = JSON.parse(jsonStr.trim());
-            if (!Array.isArray(items)) return null;
-            let html = '<div class="jarvis-cards-grid">';
-            items.forEach((item, idx) => {
-                const title = escapeHtml(item.title || `Opción ${idx + 1}`);
-                const subtitle = item.subtitle ? `<span class="card-subtitle">${escapeHtml(item.subtitle)}</span>` : '';
-                const badge = item.badge ? `<span class="card-pill-badge ${item.color || 'cyan'}">${escapeHtml(item.badge)}</span>` : '';
-                const icon = item.icon ? `<span class="card-icon">${escapeHtml(item.icon)}</span>` : `<span class="card-number-badge">${idx + 1}</span>`;
-                const desc = item.desc || item.content || item.description || '';
-                const descHtml = escapeHtml(desc);
+    function extractJsonArray(str) {
+        if (!str) return null;
+        let s = str.trim();
+        s = s.replace(/^`+[a-zA-Z0-9_\-]*\s*/, '').replace(/`+$/, '').trim();
 
-                html += `
-                    <div class="jarvis-bento-card">
-                        <div class="card-header">
-                            <div class="card-icon-wrap">${icon}</div>
-                            <div class="card-title-group">
-                                <h4 class="card-title">${title}</h4>
-                                ${subtitle}
-                            </div>
-                            ${badge}
-                        </div>
-                        <div class="card-body">
-                            <p class="card-desc">${descHtml}</p>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            return html;
-        } catch (e) {
-            return null;
+        try {
+            const val = JSON.parse(s);
+            if (Array.isArray(val)) return val;
+            if (val && Array.isArray(val.items)) return val.items;
+            if (val && Array.isArray(val.cards)) return val.cards;
+        } catch (e) {}
+
+        const start = s.indexOf('[');
+        const end = s.lastIndexOf(']');
+        if (start !== -1 && end !== -1 && end > start) {
+            const sub = s.substring(start, end + 1);
+            try {
+                const val = JSON.parse(sub);
+                if (Array.isArray(val)) return val;
+            } catch (e) {
+                try {
+                    const cleaned = sub.replace(/,\s*([\]}])/g, '$1');
+                    const val = JSON.parse(cleaned);
+                    if (Array.isArray(val)) return val;
+                } catch (e2) {}
+            }
         }
+        return null;
+    }
+
+    function extractJsonObject(str) {
+        if (!str) return null;
+        let s = str.trim();
+        s = s.replace(/^`+[a-zA-Z0-9_\-]*\s*/, '').replace(/`+$/, '').trim();
+        try {
+            const val = JSON.parse(s);
+            if (typeof val === 'object' && val !== null) return val;
+        } catch (e) {}
+        const start = s.indexOf('{');
+        const end = s.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) {
+            const sub = s.substring(start, end + 1);
+            try {
+                return JSON.parse(sub);
+            } catch (e) {
+                try {
+                    const cleaned = sub.replace(/,\s*([\]}])/g, '$1');
+                    return JSON.parse(cleaned);
+                } catch (e2) {}
+            }
+        }
+        return null;
+    }
+
+    function renderCardsBlock(jsonStr) {
+        const items = extractJsonArray(jsonStr);
+        if (!items || !Array.isArray(items) || items.length === 0) return null;
+        let html = '<div class="jarvis-cards-grid">';
+        items.forEach((item, idx) => {
+            const title = escapeHtml(item.title || `Opción ${idx + 1}`);
+            const subtitle = item.subtitle ? `<span class="card-subtitle">${escapeHtml(item.subtitle)}</span>` : '';
+            const badge = item.badge ? `<span class="card-pill-badge ${item.color || 'cyan'}">${escapeHtml(item.badge)}</span>` : '';
+            const icon = item.icon ? `<span class="card-icon">${escapeHtml(item.icon)}</span>` : `<span class="card-number-badge">${idx + 1}</span>`;
+            const desc = item.desc || item.content || item.description || '';
+            const descHtml = escapeHtml(desc);
+
+            html += `
+                <div class="jarvis-bento-card">
+                    <div class="card-header">
+                        <div class="card-icon-wrap">${icon}</div>
+                        <div class="card-title-group">
+                            <h4 class="card-title">${title}</h4>
+                            ${subtitle}
+                        </div>
+                        ${badge}
+                    </div>
+                    <div class="card-body">
+                        <p class="card-desc">${descHtml}</p>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        return html;
     }
 
     function renderComparativaBlock(jsonStr) {
-        try {
-            const data = JSON.parse(jsonStr.trim());
-            const title = data.title ? `<div class="table-card-header"><span class="table-icon">📊</span><h4 class="table-title">${escapeHtml(data.title)}</h4></div>` : '';
-            const headers = Array.isArray(data.headers) ? data.headers : [];
-            const rows = Array.isArray(data.rows) ? data.rows : [];
+        const data = extractJsonObject(jsonStr);
+        if (!data) return null;
+        const title = data.title ? `<div class="table-card-header"><span class="table-icon">📊</span><h4 class="table-title">${escapeHtml(data.title)}</h4></div>` : '';
+        const headers = Array.isArray(data.headers) ? data.headers : [];
+        const rows = Array.isArray(data.rows) ? data.rows : [];
 
-            let thHtml = '';
-            headers.forEach(h => {
-                thHtml += `<th>${escapeHtml(String(h))}</th>`;
-            });
+        let thHtml = '';
+        headers.forEach(h => {
+            thHtml += `<th>${escapeHtml(String(h))}</th>`;
+        });
 
-            let trHtml = '';
-            rows.forEach(r => {
-                trHtml += '<tr>';
-                if (Array.isArray(r)) {
-                    r.forEach(c => {
-                        trHtml += `<td>${escapeHtml(String(c))}</td>`;
-                    });
-                }
-                trHtml += '</tr>';
-            });
+        let trHtml = '';
+        rows.forEach(r => {
+            trHtml += '<tr>';
+            if (Array.isArray(r)) {
+                r.forEach(c => {
+                    trHtml += `<td>${escapeHtml(String(c))}</td>`;
+                });
+            }
+            trHtml += '</tr>';
+        });
 
-            return `
-                <div class="jarvis-table-card">
-                    ${title}
-                    <div class="table-responsive-wrapper">
-                        <table class="jarvis-glass-table">
-                            ${thHtml ? `<thead><tr>${thHtml}</tr></thead>` : ''}
-                            <tbody>${trHtml}</tbody>
-                        </table>
-                    </div>
+        return `
+            <div class="jarvis-table-card">
+                ${title}
+                <div class="table-responsive-wrapper">
+                    <table class="jarvis-glass-table">
+                        ${thHtml ? `<thead><tr>${thHtml}</tr></thead>` : ''}
+                        <tbody>${trHtml}</tbody>
+                    </table>
                 </div>
-            `;
-        } catch (e) {
-            return null;
-        }
+            </div>
+        `;
     }
 
     function renderChecklistBlock(jsonStr) {
-        try {
-            const data = JSON.parse(jsonStr.trim());
-            const title = escapeHtml(data.title || "Guía de Estudio y Verificación");
-            const sections = Array.isArray(data.sections) ? data.sections : (data.items ? [{ category: "Temas", items: data.items }] : []);
+        const data = extractJsonObject(jsonStr);
+        if (!data) return null;
+        const title = escapeHtml(data.title || "Guía de Estudio y Verificación");
+        const sections = Array.isArray(data.sections) ? data.sections : (data.items ? [{ category: "Temas", items: data.items }] : []);
 
-            let totalItems = 0;
-            sections.forEach(s => {
-                if (Array.isArray(s.items)) totalItems += s.items.length;
-            });
+        let totalItems = 0;
+        sections.forEach(s => {
+            if (Array.isArray(s.items)) totalItems += s.items.length;
+        });
 
-            let sectionsHtml = '';
-            sections.forEach(sec => {
-                const catName = escapeHtml(sec.category || "General");
-                const items = Array.isArray(sec.items) ? sec.items : [];
-                let itemsHtml = '';
-                items.forEach(it => {
-                    const text = typeof it === 'string' ? it : (it.text || it.name || '');
-                    const isChecked = typeof it === 'object' && it.checked ? ' checked' : '';
-                    itemsHtml += `
-                        <div class="checklist-item${isChecked}" onclick="window.toggleChecklistItem(this)">
-                            <span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-                            <span class="item-text">${escapeHtml(text)}</span>
-                        </div>
-                    `;
-                });
-
-                sectionsHtml += `
-                    <div class="checklist-section">
-                        <h5 class="section-badge">${catName}</h5>
-                        <div class="checklist-items">${itemsHtml}</div>
+        let sectionsHtml = '';
+        sections.forEach(sec => {
+            const catName = escapeHtml(sec.category || "General");
+            const items = Array.isArray(sec.items) ? sec.items : [];
+            let itemsHtml = '';
+            items.forEach(it => {
+                const text = typeof it === 'string' ? it : (it.text || it.name || '');
+                const isChecked = typeof it === 'object' && it.checked ? ' checked' : '';
+                itemsHtml += `
+                    <div class="checklist-item${isChecked}" onclick="window.toggleChecklistItem(this)">
+                        <span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                        <span class="item-text">${escapeHtml(text)}</span>
                     </div>
                 `;
             });
 
-            return `
-                <div class="jarvis-checklist-card">
-                    <div class="checklist-header">
-                        <div class="checklist-title-group">
-                            <span class="checklist-icon">📋</span>
-                            <h4 class="checklist-title">${title}</h4>
-                        </div>
-                        <div class="checklist-progress-badge">
-                            <span class="checklist-count">0/${totalItems}</span>
-                            <div class="checklist-progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
-                        </div>
-                    </div>
-                    <div class="checklist-sections">${sectionsHtml}</div>
+            sectionsHtml += `
+                <div class="checklist-section">
+                    <h5 class="section-badge">${catName}</h5>
+                    <div class="checklist-items">${itemsHtml}</div>
                 </div>
             `;
-        } catch (e) {
-            return null;
-        }
+        });
+
+        return `
+            <div class="jarvis-checklist-card">
+                <div class="checklist-header">
+                    <div class="checklist-title-group">
+                        <span class="checklist-icon">📋</span>
+                        <h4 class="checklist-title">${title}</h4>
+                    </div>
+                    <div class="checklist-progress-badge">
+                        <span class="checklist-count">0/${totalItems}</span>
+                        <div class="checklist-progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+                    </div>
+                </div>
+                <div class="checklist-sections">${sectionsHtml}</div>
+            </div>
+        `;
     }
 
     function formatAssistantMessage(text) {
         if (!text) return "";
         let working = text;
 
-        // 1. Extraer y proteger bloques visuales interactivos
+        // 1. Extraer y proteger bloques visuales interactivos (acepta 1 a 3 backticks, con o sin saltos de línea)
         const visualBlocks = [];
-        working = working.replace(/```(?:cards|flashcards)\s*\n([\s\S]*?)```/g, (match, json) => {
+        working = working.replace(/`{1,3}(?:cards|flashcards|bento)\b\s*([\s\S]*?)(?:`{1,3}|$)/gi, (match, json) => {
             const rendered = renderCardsBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
@@ -946,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return match;
         });
 
-        working = working.replace(/```(?:comparativa|comparison)\s*\n([\s\S]*?)```/g, (match, json) => {
+        working = working.replace(/`{1,3}(?:comparativa|comparison)\b\s*([\s\S]*?)(?:`{1,3}|$)/gi, (match, json) => {
             const rendered = renderComparativaBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
@@ -956,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return match;
         });
 
-        working = working.replace(/```checklist\s*\n([\s\S]*?)```/g, (match, json) => {
+        working = working.replace(/`{1,3}checklist\b\s*([\s\S]*?)(?:`{1,3}|$)/gi, (match, json) => {
             const rendered = renderChecklistBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
@@ -965,6 +1009,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return match;
         });
+
+        // Detectar bloque json que contenga un array de cards
+        working = working.replace(/`{1,3}json\b\s*(\[\s*\{[\s\S]*?\}\s*\])\s*(?:`{1,3}|$)/gi, (match, json) => {
+            const rendered = renderCardsBlock(json);
+            if (rendered) {
+                const idx = visualBlocks.length;
+                visualBlocks.push(rendered);
+                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+            }
+            return match;
+        });
+
+        // Si todo el mensaje recibido es un array JSON de tarjetas sin backticks
+        if (working.trim().startsWith('[') && working.trim().endsWith(']')) {
+            const rendered = renderCardsBlock(working);
+            if (rendered) {
+                return rendered;
+            }
+        }
 
         // 2. Normalizar texto markdown general
         const clean = beautifyMarkdownText(working);
