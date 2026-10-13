@@ -18,6 +18,8 @@ from core.logger import logger
 from core.orchestrator import JarvisOrchestrator
 from core.memory_manager import memory_manager
 from core.music_engine import music_engine
+from core.database import SessionLocal, MemoryModel
+from datetime import datetime, timezone
 from core.notification_engine import ReminderScheduler, NotificationEngine
 from core.voice_state_machine import VoiceStateMachine, VoiceState
 from core.voice_pipeline import VoiceMetrics
@@ -399,6 +401,89 @@ async def upload_file_endpoint(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"[FileUpload] Error procesando archivo '{filename}': {e}")
         return api_envelope(ok=False, data=None, error={"code": "INTERNAL_ERROR", "message": str(e)}, status_code=500)
+
+class MemoryPayload(BaseModel):
+    key: Optional[str] = None
+    value: Optional[str] = None
+    val: Optional[str] = None
+    category: Optional[str] = None
+    cat: Optional[str] = None
+
+@app.get("/api/memories")
+async def get_memories_endpoint(category: Optional[str] = None):
+    db = SessionLocal()
+    try:
+        q = db.query(MemoryModel).filter(MemoryModel.active == True)
+        if category and category != "all":
+            q = q.filter(MemoryModel.category == category)
+        mems = q.order_by(MemoryModel.id.asc()).all()
+        data = [
+            {
+                "id": m.id,
+                "cat": m.category or "general",
+                "key": m.key,
+                "val": m.value,
+                "created_at": str(m.created_at) if m.created_at else None
+            }
+            for m in mems
+        ]
+        return api_envelope(ok=True, data=data)
+    finally:
+        db.close()
+
+@app.post("/api/memories")
+async def create_memory_endpoint(payload: MemoryPayload):
+    k = (payload.key or "").strip()
+    v = (payload.value or payload.val or "").strip()
+    cat = (payload.category or payload.cat or "general").strip()
+    if not k or not v:
+        return api_envelope(ok=False, data=None, error={"code": "INVALID_INPUT", "message": "Clave y valor requeridos"}, status_code=400)
+    db = SessionLocal()
+    try:
+        m = MemoryModel(key=k, value=v, category=cat, type="personal", active=True)
+        db.add(m)
+        db.commit()
+        db.refresh(m)
+        orchestrator.invalidate_sysinstruction_cache()
+        return api_envelope(ok=True, data={"id": m.id, "cat": m.category, "key": m.key, "val": m.value})
+    finally:
+        db.close()
+
+@app.put("/api/memories/{memory_id}")
+async def update_memory_endpoint(memory_id: int, payload: MemoryPayload):
+    db = SessionLocal()
+    try:
+        m = db.query(MemoryModel).filter(MemoryModel.id == memory_id).first()
+        if not m:
+            return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": "Recuerdo no encontrado"}, status_code=404)
+        if payload.key:
+            m.key = payload.key.strip()
+        if payload.value is not None or payload.val is not None:
+            m.value = (payload.value if payload.value is not None else payload.val).strip()
+        if payload.category or payload.cat:
+            m.category = (payload.category or payload.cat).strip()
+        m.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(m)
+        orchestrator.invalidate_sysinstruction_cache()
+        return api_envelope(ok=True, data={"id": m.id, "cat": m.category, "key": m.key, "val": m.value})
+    finally:
+        db.close()
+
+@app.delete("/api/memories/{memory_id}")
+async def delete_memory_endpoint(memory_id: int):
+    db = SessionLocal()
+    try:
+        m = db.query(MemoryModel).filter(MemoryModel.id == memory_id).first()
+        if not m:
+            return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": "Recuerdo no encontrado"}, status_code=404)
+        m.active = False
+        m.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        orchestrator.invalidate_sysinstruction_cache()
+        return api_envelope(ok=True, data={"id": memory_id, "deleted": True})
+    finally:
+        db.close()
 
 @app.get("/api/profile")
 async def get_profile_endpoint():

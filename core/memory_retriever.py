@@ -48,8 +48,11 @@ class MemoryRetriever:
             elif any(w in clean_q for w in ["proyecto", "tesis", "jarvis", "trabajo"]) and mem.get("type") == "PROJECT":
                 relevance = max(relevance, 0.85)
 
-            importance = float(mem.get("importance", 0.5))
-            confidence = float(mem.get("confidence", 0.9))
+            imp_val = mem.get("importance")
+            importance = float(imp_val) if imp_val is not None else 0.5
+
+            conf_val = mem.get("confidence")
+            confidence = float(conf_val) if conf_val is not None else 0.9
 
             # 3. Recency dinámica basada en decaimiento exponencial (Roadmap Fase D)
             recency = 0.20

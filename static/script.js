@@ -2483,44 +2483,154 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- MEMORIA PERMANENTE ---
-    const memoryData = [
-        { cat: 'gaming', key: 'Juegos Favoritos', val: 'Devil May Cry 3 y 5 (Estilo Hack and Slash)' },
-        { cat: 'music', key: 'Artista Favorita', val: 'Billie Eilish (le fascina su voz y estilo melódico)' },
-        { cat: 'music', key: 'Banda Principal', val: 'Queen (Rock Clásico)' },
-        { cat: 'music', key: 'Bandas Destacadas', val: 'My Chemical Romance, System of a Down, Scorpions, Audioslave' },
-        { cat: 'preference', key: 'Color Favorito', val: 'Azul oscuro' },
-        { cat: 'preference', key: 'Estilo de Comunicación', val: 'Respuestas ultra cortas y precisas' },
-        { cat: 'preference', key: 'Estilo de Humor', val: 'Tono serio y sobrio' },
-        { cat: 'lifestyle', key: 'Nombre', val: 'Jhonatan David Torres Patiño (Alias: Dante)' },
-        { cat: 'lifestyle', key: 'Hobby', val: 'Programación en Python' },
-        { cat: 'lifestyle', key: 'Deporte', val: 'Ajedrez' },
-        { cat: 'lifestyle', key: 'Horario Universidad', val: 'Lunes a Viernes | 18:00 - 22:00' }
+    // --- MEMORIA PERMANENTE DINÁMICA (CRUD EN VIVO Y SYNC CON SQLITE) ---
+    let currentMemCat = 'all';
+    let liveMemories = [
+        { id: 1, cat: 'gaming', key: 'juegos_favoritos', val: 'Devil May Cry 3 y 5 (Estilo Hack and Slash)' },
+        { id: 2, cat: 'music', key: 'artista_favorita', val: 'Billie Eilish (le fascina su voz y estilo melódico)' },
+        { id: 3, cat: 'music', key: 'banda_principal', val: 'Queen (Rock Clásico)' },
+        { id: 4, cat: 'music', key: 'bandas_destacadas', val: 'My Chemical Romance, System of a Down, Scorpions, Audioslave' },
+        { id: 5, cat: 'preference', key: 'color_favorito', val: 'Azul oscuro' },
+        { id: 6, cat: 'preference', key: 'estilo_comunicacion', val: 'Compañera conversacional cercana, adaptativa y estructurada (listas y explicaciones claras)' },
+        { id: 7, cat: 'preference', key: 'estilo_humor', val: 'Humor inteligente y oportuno (65/100), ironía ligera sin forzar chistes' },
+        { id: 8, cat: 'lifestyle', key: 'nombre', val: 'Jhonatan David Torres Patiño (Alias: Dante)' },
+        { id: 9, cat: 'lifestyle', key: 'hobby', val: 'Programación en Python' },
+        { id: 10, cat: 'lifestyle', key: 'deporte', val: 'Ajedrez' },
+        { id: 11, cat: 'lifestyle', key: 'horario_universidad', val: 'Lunes a Viernes | 18:00 - 22:00' }
     ];
 
     const memoryDrawer = document.getElementById('memory-drawer');
     const btnOpenMemory = document.getElementById('btn-open-memory');
     const btnCloseMemory = document.getElementById('btn-close-memory');
+    const btnAddMemory = document.getElementById('btn-add-memory');
+    const memoryAddBox = document.getElementById('memory-add-box');
+    const btnSaveNewMem = document.getElementById('btn-save-new-mem');
+    const btnCancelNewMem = document.getElementById('btn-cancel-new-mem');
     const memoryItemsList = document.getElementById('memory-items-list');
 
+    async function fetchLiveMemories() {
+        try {
+            const res = await fetch('/api/memories');
+            if (res.ok) {
+                const json = await res.json();
+                const items = (json && json.ok && Array.isArray(json.data)) ? json.data : (Array.isArray(json) ? json : []);
+                if (items.length > 0) {
+                    liveMemories = items;
+                }
+            }
+        } catch (e) {
+            console.debug("[Memoria] Usando fallback local para recuerdos:", e);
+        }
+        renderMemories(currentMemCat);
+    }
+
+    function formatKeyTitle(key) {
+        if (!key) return "RECUERDO";
+        return key.replace(/_/g, ' ').toUpperCase();
+    }
+
     function renderMemories(category = 'all') {
+        currentMemCat = category;
         if (!memoryItemsList) return;
         memoryItemsList.innerHTML = '';
-        const filtered = category === 'all' ? memoryData : memoryData.filter(m => m.cat === category);
+        const filtered = category === 'all' ? liveMemories : liveMemories.filter(m => (m.cat || 'general') === category);
+
+        if (filtered.length === 0) {
+            memoryItemsList.innerHTML = `
+                <div style="text-align:center; padding: 24px 10px; color: var(--text-tertiary); font-size:12.5px;">
+                    No hay recuerdos registrados en esta categoría.
+                </div>
+            `;
+            return;
+        }
+
         filtered.forEach(m => {
             const card = document.createElement('div');
             card.className = 'memory-item-card';
+            card.dataset.id = m.id || '';
+
             card.innerHTML = `
-                <div class="mem-key">#${m.cat} • ${m.key}</div>
-                <div class="mem-val">${m.val}</div>
+                <div class="mem-card-header">
+                    <span class="mem-key">#${m.cat || 'general'} • ${formatKeyTitle(m.key)}</span>
+                    <div class="mem-card-actions">
+                        <button class="mem-action-btn edit" title="Cambiar / Editar" data-action="edit">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button class="mem-action-btn del" title="Eliminar" data-action="delete">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="mem-val-container">
+                    <div class="mem-val">${escapeHtml(m.val || m.value || '')}</div>
+                </div>
             `;
+
+            // Acción Editar / Cambiar
+            const btnEdit = card.querySelector('[data-action="edit"]');
+            btnEdit.addEventListener('click', () => {
+                const valContainer = card.querySelector('.mem-val-container');
+                const currentVal = m.val || m.value || '';
+                valContainer.innerHTML = `
+                    <div class="mem-edit-container">
+                        <textarea class="mem-input mem-edit-input" rows="2">${escapeHtml(currentVal)}</textarea>
+                        <div style="display:flex; justify-content:flex-end; gap:6px;">
+                            <button class="mem-btn-sm save btn-save-edit">Guardar</button>
+                            <button class="mem-btn-sm cancel btn-cancel-edit">Cancelar</button>
+                        </div>
+                    </div>
+                `;
+                const textarea = valContainer.querySelector('.mem-edit-input');
+                textarea.focus();
+
+                valContainer.querySelector('.btn-save-edit').addEventListener('click', async () => {
+                    const newVal = textarea.value.trim();
+                    if (!newVal) return;
+                    m.val = newVal;
+                    m.value = newVal;
+
+                    if (m.id) {
+                        try {
+                            await fetch(`/api/memories/${m.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ key: m.key, val: newVal, cat: m.cat })
+                            });
+                        } catch (err) {
+                            console.error("[Memoria] Error actualizando:", err);
+                        }
+                    }
+                    renderMemories(currentMemCat);
+                });
+
+                valContainer.querySelector('.btn-cancel-edit').addEventListener('click', () => {
+                    renderMemories(currentMemCat);
+                });
+            });
+
+            // Acción Eliminar
+            const btnDel = card.querySelector('[data-action="delete"]');
+            btnDel.addEventListener('click', async () => {
+                if (confirm(`¿Eliminar el recuerdo de "${formatKeyTitle(m.key)}"?`)) {
+                    if (m.id) {
+                        try {
+                            await fetch(`/api/memories/${m.id}`, { method: 'DELETE' });
+                        } catch (err) {
+                            console.error("[Memoria] Error eliminando:", err);
+                        }
+                    }
+                    liveMemories = liveMemories.filter(item => item !== m);
+                    renderMemories(currentMemCat);
+                }
+            });
+
             memoryItemsList.appendChild(card);
         });
     }
 
     if (btnOpenMemory && memoryDrawer) {
         btnOpenMemory.addEventListener('click', () => {
-            renderMemories('all');
+            fetchLiveMemories();
             memoryDrawer.classList.toggle('open');
         });
     }
@@ -2530,11 +2640,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (btnAddMemory && memoryAddBox) {
+        btnAddMemory.addEventListener('click', () => {
+            const isVisible = memoryAddBox.style.display !== 'none';
+            memoryAddBox.style.display = isVisible ? 'none' : 'flex';
+            if (!isVisible) {
+                document.getElementById('new-mem-key')?.focus();
+            }
+        });
+    }
+
+    if (btnCancelNewMem && memoryAddBox) {
+        btnCancelNewMem.addEventListener('click', () => {
+            memoryAddBox.style.display = 'none';
+        });
+    }
+
+    if (btnSaveNewMem && memoryAddBox) {
+        btnSaveNewMem.addEventListener('click', async () => {
+            const inputKey = document.getElementById('new-mem-key');
+            const inputVal = document.getElementById('new-mem-val');
+            const selectCat = document.getElementById('new-mem-cat');
+
+            const key = inputKey?.value.trim();
+            const val = inputVal?.value.trim();
+            const cat = selectCat?.value || 'general';
+
+            if (!key || !val) {
+                alert("Por favor ingresa una clave y un valor.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/memories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, val, cat })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const newMem = (data && data.data) ? data.data : { key, val, cat };
+                    liveMemories.unshift(newMem);
+                } else {
+                    liveMemories.unshift({ key, val, cat });
+                }
+            } catch (err) {
+                liveMemories.unshift({ key, val, cat });
+            }
+
+            if (inputKey) inputKey.value = '';
+            if (inputVal) inputVal.value = '';
+            memoryAddBox.style.display = 'none';
+            renderMemories(currentMemCat);
+        });
+    }
+
     document.querySelectorAll('.mem-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.mem-cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderMemories(btn.getAttribute('data-cat'));
+            renderMemories(btn.getAttribute('data-cat') || 'all');
         });
     });
 

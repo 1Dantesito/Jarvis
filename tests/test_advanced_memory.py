@@ -87,3 +87,28 @@ async def test_orchestrator_memory_flow():
     assert res["success"] is True
     tools = [t["tool_name"] for t in res["tools_executed"]]
     assert "remember_info" in tools
+
+def test_memories_crud_endpoints():
+    from fastapi.testclient import TestClient
+    from api.server import app
+
+    client = TestClient(app)
+    # 1. GET
+    res_get = client.get('/api/memories')
+    assert res_get.status_code == 200
+    assert len(res_get.json()['data']) >= 10
+
+    # 2. POST
+    res_post = client.post('/api/memories', json={'key': 'test_juego_fav', 'val': 'Resident Evil 4', 'cat': 'gaming'})
+    assert res_post.status_code == 200
+    new_mem_id = res_post.json()['data']['id']
+
+    # 3. PUT
+    res_put = client.put(f'/api/memories/{new_mem_id}', json={'val': 'Resident Evil 4 Remake'})
+    assert res_put.status_code == 200
+    assert res_put.json()['data']['val'] == 'Resident Evil 4 Remake'
+
+    # 4. DELETE
+    res_del = client.delete(f'/api/memories/{new_mem_id}')
+    assert res_del.status_code == 200
+

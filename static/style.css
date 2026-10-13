@@ -2338,34 +2338,188 @@ body {
     flex-direction: column;
     gap: 10px;
     scrollbar-width: thin;
+    scrollbar-color: rgba(0, 242, 254, 0.4) transparent;
+    padding-right: 4px;
+}
+
+.memory-items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.memory-items-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.memory-items-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 242, 254, 0.25);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    transition: background 0.2s ease;
+}
+
+.memory-items-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 242, 254, 0.6);
 }
 
 .memory-item-card {
-    background: var(--bg-surface-elevated);
-    border: 1px solid var(--card-border);
+    background: rgba(6, 16, 30, 0.78);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 242, 254, 0.18);
     padding: 12px 14px;
     border-radius: 14px;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .memory-item-card:hover {
-    border-color: rgba(217, 119, 54, 0.35);
+    border-color: rgba(0, 242, 254, 0.5);
+    background: rgba(8, 22, 42, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 242, 254, 0.12);
+}
+
+.mem-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
 }
 
 .mem-key {
     font-size: 11px;
-    color: var(--accent-primary);
+    color: var(--accent-primary, #00F2FE);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
+.mem-card-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.memory-item-card:hover .mem-card-actions {
+    opacity: 1;
+}
+
+.mem-action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.mem-action-btn:hover {
+    color: #00F2FE;
+    border-color: rgba(0, 242, 254, 0.5);
+    background: rgba(0, 242, 254, 0.15);
+}
+
+.mem-action-btn.del:hover {
+    color: #FF5252;
+    border-color: rgba(255, 82, 82, 0.5);
+    background: rgba(255, 82, 82, 0.15);
+}
+
 .mem-val {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
-    color: var(--text-primary);
-    margin-top: 3px;
-    line-height: 1.4;
+    color: #F8FAFC;
+    margin-top: 2px;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+/* Formulario de adición y edición de memoria */
+.memory-add-box {
+    background: rgba(4, 14, 28, 0.9);
+    border: 1px solid rgba(0, 242, 254, 0.28);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.mem-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #FFFFFF;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mem-input:focus {
+    border-color: var(--accent-primary, #00F2FE);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+}
+
+.mem-select {
+    background: rgba(6, 18, 34, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 5px 8px;
+    color: var(--accent-primary, #00F2FE);
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+}
+
+.mem-add-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mem-btn-sm {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mem-btn-sm.save {
+    background: var(--accent-primary, #00F2FE);
+    color: #040A14;
+}
+
+.mem-btn-sm.save:hover {
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+}
+
+.mem-btn-sm.cancel {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #CBD5E1;
+}
+
+.mem-btn-sm.cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.mem-edit-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
 }
 
 .context-section {
