@@ -58,3 +58,26 @@ def test_beautiful_markdown_unicode_bullets():
     assert "- Comprar leche" in cleaned
     assert "- Pagar internet" in cleaned
 
+def test_cards_block_speech_sanitization():
+    raw = 'Aquí tienes:\n```cards\n[{"title": "Pizza Napoletana"}, {"title": "Pasta Carbonara"}]\n```\nBuen provecho.'
+    speech = ResponseSanitizer.sanitize_for_speech(raw)
+    assert "Pizza Napoletana" in speech
+    assert "Pasta Carbonara" in speech
+    assert "```" not in speech
+    assert "{" not in speech
+
+def test_checklist_block_speech_sanitization():
+    raw = 'Organizado:\n```checklist\n{"title": "Trabajo Práctico Nº 12", "items": ["Item A"]}\n```'
+    speech = ResponseSanitizer.sanitize_for_speech(raw)
+    assert "Trabajo Práctico" in speech
+    assert "```" not in speech
+    assert "items" not in speech
+
+def test_cards_block_preservation_in_markdown():
+    raw = 'Listado:\n```cards\n[{"title": "Pizza: 1. masa 2. salsa"}]\n```'
+    cleaned = ResponseSanitizer.sanitize(raw)
+    # El JSON dentro del bloque de código cards no debe ser alterado destructivamente
+    assert '```cards' in cleaned
+    assert '"title": "Pizza: 1. masa 2. salsa"' in cleaned
+
+

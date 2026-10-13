@@ -361,5 +361,25 @@ def test_pwa_service_worker_exclusions_and_offline_shell():
     assert "serviceWorker.register('/static/sw.js')" in res_html.text
 
 
+def test_visual_components_cards_comparativa_checklist_in_css_and_js():
+    # 1. Verificar CSS para tarjetas bento, tablas y checklists
+    res_css = client.get("/static/style.css")
+    assert res_css.status_code == 200
+    css = res_css.text
+    assert ".jarvis-cards-grid" in css
+    assert ".jarvis-bento-card" in css
+    assert ".jarvis-table-card" in css
+    assert ".jarvis-glass-table" in css
+    assert ".jarvis-checklist-card" in css
+    assert ".checklist-item" in css
+    assert ".custom-checkbox" in css
 
-
+    # 2. Verificar JS para renderizadores interactivos
+    res_js = client.get("/static/script.js")
+    assert res_js.status_code == 200
+    js = res_js.text
+    assert "renderCardsBlock" in js
+    assert "renderComparativaBlock" in js
+    assert "renderChecklistBlock" in js
+    assert "window.toggleChecklistItem" in js
+    assert "formatAssistantMessage" in js

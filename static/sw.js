@@ -2,7 +2,7 @@
 // JARVIS Assistant — Progressive Web App Service Worker (v4.0 Mobile-Ready)
 // =========================================================================
 
-const CACHE_NAME = 'jarvis-liquid-glass-v2';
+const CACHE_NAME = 'jarvis-cards-v6';
 const STATIC_ASSETS = [
     '/',
     '/static/style.css',
@@ -81,19 +81,28 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Estrategia Cache-First (con network fallback) para assets estáticos (CSS, JS, imágenes, fuentes)
+    // Estrategia Network-First para CSS y JS en desarrollo
+    if (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname === '/') {
+        event.respondWith(
+            fetch(req)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const copy = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => caches.match(req))
+        );
+        return;
+    }
+
+    // Estrategia Cache-First (con network fallback) para imágenes, fuentes y manifest
     event.respondWith(
         caches.match(req).then((cachedResponse) => {
             if (cachedResponse) {
-                // Actualización en background (stale-while-revalidate)
-                fetch(req).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        caches.open(CACHE_NAME).then((cache) => cache.put(req, networkResponse));
-                    }
-                }).catch(() => {});
                 return cachedResponse;
             }
-
             return fetch(req).then((networkResponse) => {
                 if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                     return networkResponse;

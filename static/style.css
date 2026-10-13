@@ -1205,46 +1205,442 @@ body {
     letter-spacing: 0.1px;
 }
 
-/* Listas ordenadas y desordenadas con indentación y bullets nítidos */
-.msg-content ul, 
+/* Listas ordenadas y desordenadas con formato Bento Card y marcadores iluminados */
 .msg-content ol {
-    margin: 12px 0 16px 0;
-    padding-left: 28px;
+    margin: 14px 0 16px 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: jarvis-list-counter;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
+.msg-content ol > li {
+    counter-increment: jarvis-list-counter;
+    position: relative;
+    padding: 12px 16px 12px 48px;
+    background: rgba(12, 24, 46, 0.55);
+    border: 1px solid rgba(0, 242, 254, 0.14);
+    border-left: 3.5px solid var(--accent-primary, #00F2FE);
+    border-radius: 12px;
+    line-height: 1.62;
+    color: #E2E8F0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.msg-content ol > li:hover {
+    transform: translateY(-2px);
+    background: rgba(16, 32, 60, 0.75);
+    border-color: rgba(0, 242, 254, 0.32);
+    box-shadow: 0 8px 24px rgba(0, 242, 254, 0.08);
+}
+
+.msg-content ol > li::before {
+    content: counter(jarvis-list-counter);
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 25px;
+    height: 25px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(0, 136, 255, 0.15));
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    color: #00F2FE;
+    font-size: 11.5px;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .msg-content ul {
+    margin: 12px 0 16px 0;
+    padding-left: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     list-style-type: disc;
 }
 
-.msg-content ol {
-    list-style-type: decimal;
-}
-
-.msg-content li {
-    line-height: 1.65;
-    margin-bottom: 4px;
+.msg-content ul > li {
+    line-height: 1.62;
     color: #E2E8F0;
-    padding-left: 4px;
+    margin-bottom: 2px;
 }
 
-.msg-content li::marker {
+.msg-content ul > li::marker {
     color: var(--accent-primary, #00F2FE);
-    font-weight: 700;
 }
 
 .msg-content li strong {
-    color: #F8FAFC;
+    color: #FFFFFF;
     font-weight: 700;
-    border-bottom: 1px dotted rgba(0, 242, 254, 0.35);
-    padding-bottom: 1px;
+    letter-spacing: 0.2px;
 }
 
 .msg-content li > p {
     margin: 0;
     display: inline;
+}
+
+/* ==========================================================================
+   COMPONENTES VISUALES INTERACTIVOS (CARDS, COMPARATIVAS, CHECKLISTS)
+   ========================================================================== */
+
+/* 1. Cuadrícula de Tarjetas / Flashcards Bento */
+.jarvis-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+    width: 100%;
+}
+
+.jarvis-bento-card {
+    background: linear-gradient(145deg, rgba(12, 26, 48, 0.85) 0%, rgba(6, 14, 28, 0.92) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.16);
+    border-top: 2px solid rgba(0, 242, 254, 0.45);
+    border-radius: 14px;
+    padding: 14px 16px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+}
+
+.jarvis-bento-card:hover {
+    transform: translateY(-2.5px);
+    border-color: rgba(0, 242, 254, 0.40);
+    box-shadow: 0 12px 32px rgba(0, 242, 254, 0.12);
+}
+
+.jarvis-bento-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.jarvis-bento-card .card-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0, 242, 254, 0.10);
+    border: 1px solid rgba(0, 242, 254, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.jarvis-bento-card .card-number-badge {
+    color: #00F2FE;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 13px;
+}
+
+.jarvis-bento-card .card-title-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.jarvis-bento-card .card-title {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.jarvis-bento-card .card-subtitle {
+    font-size: 11px;
+    color: var(--accent-secondary, #38E1FF);
+    opacity: 0.85;
+    display: block;
+    margin-top: 2px;
+}
+
+.jarvis-bento-card .card-pill-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.jarvis-bento-card .card-pill-badge.cyan {
+    background: rgba(0, 242, 254, 0.15);
+    color: #00F2FE;
+    border: 1px solid rgba(0, 242, 254, 0.35);
+}
+
+.jarvis-bento-card .card-pill-badge.amber {
+    background: rgba(251, 191, 36, 0.15);
+    color: #FBBF24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.jarvis-bento-card .card-pill-badge.purple {
+    background: rgba(168, 85, 247, 0.15);
+    color: #C084FC;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.jarvis-bento-card .card-pill-badge.emerald {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.jarvis-bento-card .card-pill-badge.rose {
+    background: rgba(244, 63, 94, 0.15);
+    color: #FB7185;
+    border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+.jarvis-bento-card .card-body {
+    flex: 1;
+}
+
+.jarvis-bento-card .card-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #CBD5E1;
+    margin: 0;
+}
+
+/* 2. Cuadros Comparativos Glassmorphic */
+.jarvis-table-card {
+    margin: 14px 0;
+    background: linear-gradient(145deg, rgba(10, 20, 38, 0.88), rgba(5, 12, 24, 0.94));
+    border: 1px solid rgba(0, 242, 254, 0.20);
+    border-top: 2px solid rgba(0, 242, 254, 0.45);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+
+.table-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(0, 242, 254, 0.08);
+    border-bottom: 1px solid rgba(0, 242, 254, 0.16);
+}
+
+.table-card-header .table-title {
+    font-family: var(--font-heading);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0;
+}
+
+.table-responsive-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.jarvis-glass-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.jarvis-glass-table th {
+    padding: 10px 14px;
+    background: rgba(14, 28, 54, 0.90);
+    color: #00F2FE;
+    font-weight: 700;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1.5px solid rgba(0, 242, 254, 0.28);
+    white-space: nowrap;
+}
+
+.jarvis-glass-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: #E2E8F0;
+    line-height: 1.5;
+}
+
+.jarvis-glass-table tr:hover td {
+    background: rgba(0, 242, 254, 0.04);
+}
+
+.jarvis-glass-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 3. Guía de Estudio y Checklists Interactivas */
+.jarvis-checklist-card {
+    margin: 14px 0;
+    background: linear-gradient(145deg, rgba(10, 20, 38, 0.90), rgba(5, 12, 24, 0.95));
+    border: 1px solid rgba(0, 242, 254, 0.20);
+    border-top: 2px solid rgba(0, 242, 254, 0.50);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.checklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+}
+
+.checklist-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checklist-title-group .checklist-icon {
+    font-size: 18px;
+}
+
+.checklist-title-group .checklist-title {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0;
+}
+
+.checklist-progress-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checklist-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: #00F2FE;
+    white-space: nowrap;
+}
+
+.checklist-progress-bar {
+    width: 80px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.checklist-progress-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00F2FE, #0088FF);
+    border-radius: 8px;
+    transition: width 0.25s ease;
+}
+
+.checklist-section {
+    margin-top: 10px;
+}
+
+.section-badge {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #38E1FF;
+    margin: 8px 0 6px 0;
+    letter-spacing: 0.6px;
+    display: block;
+}
+
+.checklist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+    user-select: none;
+}
+
+.checklist-item:hover {
+    background: rgba(0, 242, 254, 0.05);
+    border-color: rgba(0, 242, 254, 0.25);
+    transform: translateX(2px);
+}
+
+.checklist-item.inline {
+    margin: 6px 0;
+}
+
+.custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(0, 242, 254, 0.50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(0, 242, 254, 0.05);
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.custom-checkbox svg {
+    display: none;
+    stroke: #040A14;
+}
+
+.checklist-item.checked .custom-checkbox {
+    background: #00F2FE;
+    border-color: #00F2FE;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+}
+
+.checklist-item.checked .custom-checkbox svg {
+    display: block;
+}
+
+.checklist-item .item-text {
+    font-size: 13.5px;
+    color: #E2E8F0;
+    transition: opacity 0.18s ease, color 0.18s ease;
+    line-height: 1.45;
+}
+
+.checklist-item.checked .item-text {
+    text-decoration: line-through;
+    opacity: 0.55;
+    color: #94A3B8;
 }
 
 /* Encabezados Markdown dentro de mensajes */

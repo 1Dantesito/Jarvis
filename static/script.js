@@ -786,25 +786,221 @@ document.addEventListener('DOMContentLoaded', () => {
         return s.trim();
     }
 
+    window.toggleChecklistItem = function(el) {
+        if (!el) return;
+        el.classList.toggle('checked');
+        const card = el.closest('.jarvis-checklist-card');
+        if (card) {
+            const total = card.querySelectorAll('.checklist-item').length;
+            const checked = card.querySelectorAll('.checklist-item.checked').length;
+            const countEl = card.querySelector('.checklist-count');
+            const fillEl = card.querySelector('.progress-fill');
+            if (countEl) countEl.textContent = `${checked}/${total}`;
+            if (fillEl && total > 0) fillEl.style.width = `${Math.round((checked / total) * 100)}%`;
+        }
+    };
+
+    function renderCardsBlock(jsonStr) {
+        try {
+            const items = JSON.parse(jsonStr.trim());
+            if (!Array.isArray(items)) return null;
+            let html = '<div class="jarvis-cards-grid">';
+            items.forEach((item, idx) => {
+                const title = escapeHtml(item.title || `Opción ${idx + 1}`);
+                const subtitle = item.subtitle ? `<span class="card-subtitle">${escapeHtml(item.subtitle)}</span>` : '';
+                const badge = item.badge ? `<span class="card-pill-badge ${item.color || 'cyan'}">${escapeHtml(item.badge)}</span>` : '';
+                const icon = item.icon ? `<span class="card-icon">${escapeHtml(item.icon)}</span>` : `<span class="card-number-badge">${idx + 1}</span>`;
+                const desc = item.desc || item.content || item.description || '';
+                const descHtml = escapeHtml(desc);
+
+                html += `
+                    <div class="jarvis-bento-card">
+                        <div class="card-header">
+                            <div class="card-icon-wrap">${icon}</div>
+                            <div class="card-title-group">
+                                <h4 class="card-title">${title}</h4>
+                                ${subtitle}
+                            </div>
+                            ${badge}
+                        </div>
+                        <div class="card-body">
+                            <p class="card-desc">${descHtml}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function renderComparativaBlock(jsonStr) {
+        try {
+            const data = JSON.parse(jsonStr.trim());
+            const title = data.title ? `<div class="table-card-header"><span class="table-icon">📊</span><h4 class="table-title">${escapeHtml(data.title)}</h4></div>` : '';
+            const headers = Array.isArray(data.headers) ? data.headers : [];
+            const rows = Array.isArray(data.rows) ? data.rows : [];
+
+            let thHtml = '';
+            headers.forEach(h => {
+                thHtml += `<th>${escapeHtml(String(h))}</th>`;
+            });
+
+            let trHtml = '';
+            rows.forEach(r => {
+                trHtml += '<tr>';
+                if (Array.isArray(r)) {
+                    r.forEach(c => {
+                        trHtml += `<td>${escapeHtml(String(c))}</td>`;
+                    });
+                }
+                trHtml += '</tr>';
+            });
+
+            return `
+                <div class="jarvis-table-card">
+                    ${title}
+                    <div class="table-responsive-wrapper">
+                        <table class="jarvis-glass-table">
+                            ${thHtml ? `<thead><tr>${thHtml}</tr></thead>` : ''}
+                            <tbody>${trHtml}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function renderChecklistBlock(jsonStr) {
+        try {
+            const data = JSON.parse(jsonStr.trim());
+            const title = escapeHtml(data.title || "Guía de Estudio y Verificación");
+            const sections = Array.isArray(data.sections) ? data.sections : (data.items ? [{ category: "Temas", items: data.items }] : []);
+
+            let totalItems = 0;
+            sections.forEach(s => {
+                if (Array.isArray(s.items)) totalItems += s.items.length;
+            });
+
+            let sectionsHtml = '';
+            sections.forEach(sec => {
+                const catName = escapeHtml(sec.category || "General");
+                const items = Array.isArray(sec.items) ? sec.items : [];
+                let itemsHtml = '';
+                items.forEach(it => {
+                    const text = typeof it === 'string' ? it : (it.text || it.name || '');
+                    const isChecked = typeof it === 'object' && it.checked ? ' checked' : '';
+                    itemsHtml += `
+                        <div class="checklist-item${isChecked}" onclick="window.toggleChecklistItem(this)">
+                            <span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                            <span class="item-text">${escapeHtml(text)}</span>
+                        </div>
+                    `;
+                });
+
+                sectionsHtml += `
+                    <div class="checklist-section">
+                        <h5 class="section-badge">${catName}</h5>
+                        <div class="checklist-items">${itemsHtml}</div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="jarvis-checklist-card">
+                    <div class="checklist-header">
+                        <div class="checklist-title-group">
+                            <span class="checklist-icon">📋</span>
+                            <h4 class="checklist-title">${title}</h4>
+                        </div>
+                        <div class="checklist-progress-badge">
+                            <span class="checklist-count">0/${totalItems}</span>
+                            <div class="checklist-progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                    <div class="checklist-sections">${sectionsHtml}</div>
+                </div>
+            `;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function formatAssistantMessage(text) {
         if (!text) return "";
-        const clean = beautifyMarkdownText(text);
+        let working = text;
 
-        // 1. Si marked.js está cargado (local en /static/marked.min.js), usar renderizado estándar GFM
+        // 1. Extraer y proteger bloques visuales interactivos
+        const visualBlocks = [];
+        working = working.replace(/```(?:cards|flashcards)\s*\n([\s\S]*?)```/g, (match, json) => {
+            const rendered = renderCardsBlock(json);
+            if (rendered) {
+                const idx = visualBlocks.length;
+                visualBlocks.push(rendered);
+                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+            }
+            return match;
+        });
+
+        working = working.replace(/```(?:comparativa|comparison)\s*\n([\s\S]*?)```/g, (match, json) => {
+            const rendered = renderComparativaBlock(json);
+            if (rendered) {
+                const idx = visualBlocks.length;
+                visualBlocks.push(rendered);
+                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+            }
+            return match;
+        });
+
+        working = working.replace(/```checklist\s*\n([\s\S]*?)```/g, (match, json) => {
+            const rendered = renderChecklistBlock(json);
+            if (rendered) {
+                const idx = visualBlocks.length;
+                visualBlocks.push(rendered);
+                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+            }
+            return match;
+        });
+
+        // 2. Normalizar texto markdown general
+        const clean = beautifyMarkdownText(working);
+
+        // 3. Renderizar Markdown (marked o nativo)
+        let html = "";
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
             try {
                 marked.setOptions({
                     breaks: true,
                     gfm: true
                 });
-                return marked.parse(clean);
+                html = marked.parse(clean);
             } catch (err) {
                 console.warn("[Markdown] Error en marked.parse, usando parser nativo:", err);
+                html = renderMarkdownNative(clean);
             }
+        } else {
+            html = renderMarkdownNative(clean);
         }
 
-        // 2. Parser nativo avanzado para listas, bloques de código, encabezados y formato tipo ChatGPT
-        return renderMarkdownNative(clean);
+        // 4. Restaurar bloques visuales interactivos protegidos
+        visualBlocks.forEach((vHtml, idx) => {
+            html = html.replace(`__VISUAL_BLOCK_${idx}__`, vHtml);
+            html = html.replace(`<p>__VISUAL_BLOCK_${idx}__</p>`, vHtml);
+        });
+
+        // 5. Convertir casillas inline de tareas [ ] o ☐ en checkboxes interactivos
+        html = html.replace(/(?:<li>|\n|^)[ \t]*(?:\[ \]|☐)\s*([^\n<]+)/g, (match, txt) => {
+            return `<div class="checklist-item inline" onclick="window.toggleChecklistItem(this)"><span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="item-text">${txt.trim()}</span></div>`;
+        });
+        html = html.replace(/(?:<li>|\n|^)[ \t]*(?:\[x\]|☑)\s*([^\n<]+)/g, (match, txt) => {
+            return `<div class="checklist-item inline checked" onclick="window.toggleChecklistItem(this)"><span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="item-text">${txt.trim()}</span></div>`;
+        });
+
+        return html;
     }
 
 
