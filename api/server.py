@@ -27,6 +27,8 @@ from core.voice_pipeline import VoiceMetrics
 from core.response_sanitizer import ResponseSanitizer
 from core.document_generator import DocumentGenerator
 from core.security import SecurityPolicy
+from core.image_service import ImageSearchService
+from core.network_tunnel import tunnel_manager
 
 # Proveedores directos para health checks
 from providers.gemini_provider import GeminiProvider
@@ -64,7 +66,7 @@ async def lifespan(app: FastAPI):
     async def _async_startup_health():
         try:
             health_report = await perform_health_check()
-            logger.info(f"[Auto-Diagnóstico v3.0] Estado de Servicios:\n{json.dumps(health_report, indent=2)}")
+            logger.info(f"[Auto-Diagnóstico v{settings.VERSION}] Estado de Servicios:\n{json.dumps(health_report, indent=2)}")
         except Exception as e:
             logger.warning(f"[Auto-Diagnóstico] Error en chequeo inicial: {e}")
 
@@ -74,7 +76,8 @@ async def lifespan(app: FastAPI):
     reminder_engine.stop()
     ReminderScheduler.stop()
     scheduler_task.cancel()
-    logger.info("[Servidor] Motores de recordatorios detenidos.")
+    tunnel_manager.stop_tunnel()
+    logger.info("[Servidor] Motores de recordatorios y túnel detenidos.")
 
 app = FastAPI(title="JARVIS AI Assistant", version=settings.VERSION, lifespan=lifespan)
 
@@ -191,6 +194,51 @@ async def health_endpoint():
     report = await perform_health_check()
     return api_envelope(ok=True, data=report)
 
+@app.get("/api/mobile/info")
+async def get_mobile_info():
+    """Retorna información de conexión para celular (IP local, túnel público, QR)."""
+    info = tunnel_manager.get_mobile_connection_info(port=settings.PORT)
+    return api_envelope(ok=True, data=info)
+
+@app.post("/api/mobile/tunnel/start")
+async def start_mobile_tunnel():
+    """Inicia el túnel seguro hacia Internet bajo demanda."""
+    if tunnel_manager.is_active():
+        return api_envelope(ok=True, data=tunnel_manager.get_mobile_connection_info(port=settings.PORT))
+    
+    url = await tunnel_manager.start_tunnel(port=settings.PORT)
+    info = tunnel_manager.get_mobile_connection_info(port=settings.PORT)
+    if url:
+        return api_envelope(ok=True, data=info)
+    else:
+        return api_envelope(
+            ok=False, 
+            data=info, 
+            error={"code": "TUNNEL_FAILED", "message": info.get("last_error") or "No se pudo iniciar el túnel"}
+        )
+
+@app.post("/api/mobile/tunnel/stop")
+async def stop_mobile_tunnel():
+    """Detiene el túnel seguro hacia Internet."""
+    tunnel_manager.stop_tunnel()
+    return api_envelope(ok=True, data=tunnel_manager.get_mobile_connection_info(port=settings.PORT))
+
+@app.get("/download/jarvis.apk")
+async def download_apk_endpoint():
+    """Descarga el archivo APK de JARVIS para instalación directa en Android."""
+    apk_path = settings.BASE_DIR / "JARVIS.apk"
+    if not apk_path.exists():
+        fallback_path = settings.BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+        if fallback_path.exists():
+            apk_path = fallback_path
+        else:
+            return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": "APK no encontrado"}, status_code=404)
+    return FileResponse(
+        str(apk_path),
+        media_type="application/vnd.android.package-archive",
+        filename="JARVIS.apk"
+    )
+
 _TTS_CACHE: Dict[str, bytes] = {}
 _TTS_CACHE_MAX_SIZE = 300
 
@@ -224,9 +272,33 @@ async def tts_stream_endpoint(text: str = Query(..., description="Texto a sintet
                         pass
                 _TTS_CACHE[clean_text] = bytes(audio_buffer)
         except Exception as e:
-            logger.error(f"[EdgeTTS] Error en streaming: {e}")
+            logger.warning(f"[EdgeTTS] Error en streaming: {e}, activando fallback gTTS...")
+            try:
+                import io
+                from gtts import gTTS
+                def _generate_gtts():
+                    tts = gTTS(text=clean_text, lang="es", tld="com.mx")
+                    fp = io.BytesIO()
+                    tts.write_to_fp(fp)
+                    fp.seek(0)
+                    return fp.read()
+                fallback_bytes = await asyncio.to_thread(_generate_gtts)
+                if fallback_bytes:
+                    _TTS_CACHE[clean_text] = fallback_bytes
+                    yield fallback_bytes
+            except Exception as fb_err:
+                logger.error(f"[TTS Fallback] Falló también gTTS: {fb_err}")
 
     return StreamingResponse(_audio_generator(), media_type="audio/mpeg")
+ 
+@app.get("/api/images/search")
+@app.get("/api/image/search")
+async def search_image_endpoint(q: str = Query(..., description="Término para buscar imagen")):
+    clean_q = (q or "").strip()
+    if not clean_q:
+        return api_envelope(ok=True, data={"query": "", "image_url": None})
+    img_url = await ImageSearchService.search_image(clean_q)
+    return api_envelope(ok=True, data={"query": clean_q, "image_url": img_url})
 
 class ChatRequest(BaseModel):
     prompt: Optional[str] = None
@@ -249,6 +321,16 @@ class CreateReminderRequest(BaseModel):
 
 class SnoozeReminderRequest(BaseModel):
     minutes: Optional[int] = 10
+
+class CreateTaskRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = ""
+    priority: Optional[str] = "NORMAL"
+    project: Optional[str] = "General"
+    # Aliases
+    text: Optional[str] = None
+    name: Optional[str] = None
+    task: Optional[str] = None
 
 
 @app.post("/api/chat")
@@ -544,6 +626,45 @@ async def clear_reminders_endpoint():
 @app.get("/api/pending")
 async def get_pending_endpoint():
     return api_envelope(ok=True, data=memory_manager.get_pending_summary())
+
+@app.get("/api/tasks")
+async def get_tasks_endpoint(project: Optional[str] = None, include_completed: bool = False):
+    tasks = memory_manager.list_tasks(include_completed=include_completed, project=project)
+    return api_envelope(ok=True, data={"tasks": tasks, "project": project or "Todos"})
+
+@app.post("/api/tasks")
+async def create_task_endpoint(payload: CreateTaskRequest):
+    clean_title = (payload.title or payload.text or payload.name or payload.task or "").strip()
+    if not clean_title:
+        return api_envelope(ok=False, data=None, error={"code": "BAD_REQUEST", "message": "El título de la tarea no puede estar vacío."}, status_code=400)
+    res = memory_manager.create_task(
+        title=clean_title,
+        description=payload.description or "",
+        priority=(payload.priority or "NORMAL").upper(),
+        project=(payload.project or "General").strip()
+    )
+    if res.get("success"):
+        return api_envelope(ok=True, data=res.get("data"))
+    return api_envelope(ok=False, data=None, error={"code": "CREATION_FAILED", "message": res.get("error", "Error creando tarea")}, status_code=400)
+
+@app.post("/api/tasks/{task_id}/complete")
+async def complete_task_endpoint(task_id: int):
+    ok = memory_manager.complete_task(task_id=task_id)
+    if ok:
+        return api_envelope(ok=True, data={"task_id": task_id, "status": "COMPLETED"})
+    return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": f"No se encontró la tarea #{task_id}"}, status_code=404)
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task_endpoint(task_id: int):
+    res = memory_manager.delete_task(str(task_id))
+    if res.get("success"):
+        return api_envelope(ok=True, data=res)
+    return api_envelope(ok=False, data=None, error={"code": "NOT_FOUND", "message": res.get("error", "No encontrado")}, status_code=404)
+
+@app.delete("/api/tasks")
+async def clear_tasks_endpoint(project: Optional[str] = None):
+    res = memory_manager.clear_all_tasks(project=project)
+    return api_envelope(ok=True, data=res)
 
 @app.post("/api/reset")
 async def reset_endpoint(session_id: Optional[str] = None):

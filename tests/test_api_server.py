@@ -125,3 +125,30 @@ def test_websocket_user_text_streaming():
 
 
 
+
+
+def test_api_tasks_crud_and_filtering():
+    # 1. Crear tarea en lista personalizada
+    res1 = client.post("/api/tasks", json={"title": "Comprar pasta", "project": "Supermercado"})
+    assert res1.status_code == 200
+    b1 = res1.json()
+    assert b1["ok"] is True
+    t_id = b1["data"]["id"]
+
+    # 2. Listar tareas filtradas por proyecto
+    res2 = client.get("/api/tasks?project=Supermercado")
+    assert res2.status_code == 200
+    b2 = res2.json()
+    assert b2["ok"] is True
+    tasks = b2["data"]["tasks"]
+    assert any(t["id"] == t_id for t in tasks)
+
+    # 3. Completar tarea
+    res3 = client.post(f"/api/tasks/{t_id}/complete")
+    assert res3.status_code == 200
+    assert res3.json()["ok"] is True
+
+    # 4. Vaciar lista
+    res4 = client.delete("/api/tasks?project=Supermercado")
+    assert res4.status_code == 200
+    assert res4.json()["ok"] is True

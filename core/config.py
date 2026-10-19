@@ -20,7 +20,7 @@ def mask_key(key: str) -> str:
 
 class Settings:
     PROJECT_NAME: str = "JARVIS Assistant"
-    VERSION: str = "3.0.0"
+    VERSION: str = "4.0.0"
     
     # Rutas
     BASE_DIR: Path = BASE_DIR

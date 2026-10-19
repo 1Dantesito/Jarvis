@@ -1,0 +1,31 @@
+====================================================================
+           ⚡ JARVIS v4.0 — Neural AI Assistant ⚡
+====================================================================
+
+¡Bienvenido a JARVIS!
+
+Este paquete ya viene 100% preconfigurado con la Inteligencia Artificial y la API Key activa.
+Para usarlo en este computador solo requieres 2 pasos:
+
+PASO 1: REQUISITO DE PYTHON
+---------------------------
+Asegúrate de tener instalado Python (versión 3.10, 3.11 o 3.12) en Windows.
+Si aún no lo tienes instalado, descárgalo gratis desde:
+👉 https://www.python.org/downloads/
+
+*MUY IMPORTANTE*: Durante la instalación de Python, en la primera pantalla,
+marca obligatoriamente la casilla:
+   [X] "Add python.exe to PATH"
+
+PASO 2: INICIAR JARVIS (1-CLIC)
+--------------------------------
+Haz doble clic en:
+👉 Iniciar_Jarvis.bat
+
+El lanzador inteligente se encargará de todo de forma automática:
+- Creará el entorno virtual local para tu computador.
+- Descargará e instalará todas las librerías necesarias.
+- Iniciará el servidor y abrirá JARVIS en tu navegador (http://localhost:5001).
+
+¡No necesitas configurar nada más! Disfruta de la experiencia.
+====================================================================

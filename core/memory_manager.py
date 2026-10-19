@@ -376,7 +376,8 @@ class MemoryManager:
             if not include_completed:
                 q = q.filter(TaskModel.status != "COMPLETED")
             if project:
-                q = q.filter(TaskModel.project == project)
+                clean_p = project.strip()
+                q = q.filter(TaskModel.project.ilike(f"%{clean_p}%"))
             rows = q.order_by(TaskModel.id.desc()).all()
             return [{"id": r.id, "title": r.title, "description": r.description, "project": r.project, "priority": r.priority, "status": r.status} for r in rows]
         finally:
@@ -398,12 +399,17 @@ class MemoryManager:
         finally:
             db.close()
 
-    def clear_all_tasks(self) -> Dict[str, Any]:
+    def clear_all_tasks(self, project: Optional[str] = None) -> Dict[str, Any]:
         db = SessionLocal()
         try:
-            deleted = db.query(TaskModel).delete()
+            q = db.query(TaskModel)
+            if project:
+                clean_p = project.strip()
+                q = q.filter(TaskModel.project.ilike(f"%{clean_p}%"))
+            deleted = q.delete(synchronize_session=False)
             db.commit()
-            return {"success": True, "message": f"Se eliminaron {deleted} tareas."}
+            target = f" de la lista '{project}'" if project else ""
+            return {"success": True, "message": f"Se eliminaron {deleted} tareas{target}."}
         except Exception as e:
             db.rollback()
             return {"success": False, "error": str(e)}

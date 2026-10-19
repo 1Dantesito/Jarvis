@@ -87,3 +87,32 @@ def test_background_listener_lifecycle():
     listener.stop()
     assert listener.is_running is False
 
+
+def test_handsfree_frontend_conversational_window():
+    import os
+    js_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static', 'script.js'))
+    assert os.path.exists(js_path)
+    with open(js_path, 'r', encoding='utf-8') as f:
+        js = f.read()
+
+    # 1. Ventana conversacional de seguimiento (8 segundos)
+    assert "openConversationalWindow" in js
+    assert "resetConversationTimer" in js
+    assert "closeConversationalWindow" in js
+    assert "isConversationActive" in js
+    assert "CONVERSATION_WINDOW_MS = 8000" in js
+
+    # 2. Respuestas vocales naturales ante el wake word solitario
+    assert "playSpokenAck" in js
+    assert "¿Dígame, señor?" in js
+    assert "¿Sí? Te escucho." in js
+
+    # 3. Barge-in activo que interrumpe el audio actual y emite websocket barge_in
+    assert 'type: "barge_in"' in js
+    assert 'uiState.voiceState = "INTERRUPTED"' in js
+    assert "clearTTSAudioQueue" in js
+
+    # 4. Debounce rápido de 850ms para transcripciones intermedias
+    assert "speechSilenceTimer" in js
+    assert "850" in js
+

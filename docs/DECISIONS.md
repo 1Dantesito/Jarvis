@@ -48,3 +48,10 @@
 - **Contexto:** JARVIS emitía explicaciones largas y saludos robóticos innecesarios para tareas rutinarias.
 - **Decisión:** Inyectar una regla obligatoria en los prompts del sistema: las acciones y confirmaciones deben limitarse a 1 frase concisa, reservando respuestas detalladas únicamente para consultas informativas explícitas.
 - **Consecuencias:** Diálogo fluido, rápido y natural similar a un asistente real de alta gama.
+
+---
+
+## ADR-007: Fluidez Conversacional en Manos Libres y Barge-In en Tiempo Real
+- **Contexto:** El modo manos libres exigía repetir "Jarvis" en cada turno de diálogo, el micrófono se desactivaba al concluir la reproducción de audio TTS y el usuario no podía interrumpir a JARVIS de forma fluida.
+- **Decisión:** Implementar ventana conversacional activa de 8 segundos tras cada respuesta, debounce de silencio de 850ms en transcripciones intermedias, acuse de recibo hablado ante la invocación solitaria de la palabra clave, barge-in en tiempo real vía WebSocket para detener de inmediato el audio y las tareas en cola, y depuración estricta en `clean_for_speech` para lectura vocal limpia sin URLs ni markdown residual.
+- **Consecuencias:** Experiencia conversacional continua de baja latencia con alternancia de turnos natural sin necesidad de reactivación manual ni repetición del wake word.

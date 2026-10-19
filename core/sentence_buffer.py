@@ -71,7 +71,23 @@ class SentenceBuffer:
     def clean_for_speech(cls, text: str) -> str:
         if not text:
             return ""
-        s = re.sub(r'[*#_~>|]', '', text)
+        # 1. Eliminar marcadores técnicos y etiquetas HTML
+        s = re.sub(r'<(?:div|p|span|b|strong)[^>]*>.*?</(?:div|p|span|b|strong)>|<[^>]+>', '', text, flags=re.IGNORECASE)
+        s = re.sub(r'(?:__|@@|%%)?(?:JARVIS_)?VISUAL_BLOCK_\d+(?:__|@@|%%)?', '', s, flags=re.IGNORECASE)
+        # 2. Eliminar bloques de código e inline code
+        s = re.sub(r'```[\s\S]*?```', '', s)
+        s = re.sub(r'`[^`]+`', '', s)
+        # 3. Limpiar enlaces markdown primero para preservar el texto ancla
         s = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', s)
+        # 4. Eliminar URLs directas sueltas
+        s = re.sub(r'https?://\S+', '', s)
+        # 5. Limpiar sintaxis markdown residual y caracteres estructurales
+        s = re.sub(r'[*_~]', '', s)
+        s = re.sub(r'[#|>•·]', ' ', s)
+        # 6. Limpiar numeración tipo 01. a 1.
+        s = re.sub(r'\b0?(\d+)\.\s*', r'\1. ', s)
+        # 7. Normalizar puntuación y espacios
+        s = re.sub(r'\s+([,.:;?!])', r'\1', s)
+        s = re.sub(r'([¿¡])\s+', r'\1', s)
         s = re.sub(r'\s+', ' ', s).strip()
         return s

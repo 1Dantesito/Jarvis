@@ -27,6 +27,23 @@ def test_sentence_buffer_markdown_cleaning():
     assert clean == "Hola Dante, ¿en qué puedo ayudarte hoy?"
     assert "*" not in clean
 
+def test_clean_for_speech_comprehensive():
+    # 1. Enlaces markdown y URLs sin formato
+    text_links = "Consulta en [Google](https://google.com) o visita https://openai.com directamente."
+    assert SentenceBuffer.clean_for_speech(text_links) == "Consulta en Google o visita directamente."
+
+    # 2. Bloques de código e inline code
+    text_code = "Ejecuta ```python\nprint('Hola')\n``` o simplemente escribe `calc`."
+    assert SentenceBuffer.clean_for_speech(text_code) == "Ejecuta o simplemente escribe."
+
+    # 3. Numeración con ceros a la izquierda y bullets
+    text_numbers = "• 01. Primero en la lista. • 02. Segundo punto."
+    assert SentenceBuffer.clean_for_speech(text_numbers) == "1. Primero en la lista. 2. Segundo punto."
+
+    # 4. Marcadores visuales y etiquetas HTML
+    text_html = "<div>Texto en contenedor</div> @@JARVIS_VISUAL_BLOCK_1@@ ¡Listo!"
+    assert SentenceBuffer.clean_for_speech(text_html) == "¡Listo!"
+
 def test_voice_state_machine_transitions():
     sm = VoiceStateMachine()
     assert sm.current_state == VoiceState.IDLE

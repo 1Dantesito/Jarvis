@@ -86,16 +86,20 @@ class SocialResponseLayer:
 
         elif tool_name == "list_tasks":
             tasks = data.get("tasks", [])
+            project = tool_args.get("project") or data.get("project")
+            proj_str = f" en '{project}'" if project and str(project).strip().lower() not in ["todos", "general"] else ""
             total = len(tasks)
             if total == 0:
+                if proj_str:
+                    return f"No tienes tareas pendientes{proj_str}."
                 return "No tienes tareas pendientes por ahora."
             elif total <= 3:
                 t_str = ", ".join([f"'{t['title']}'" for t in tasks if t.get('title')])
-                return f"Tus pendientes activos son: {t_str}."
+                return f"Tus pendientes activos{proj_str} son: {t_str}."
             else:
                 t_str = ", ".join([f"'{t['title']}'" for t in tasks[:3] if t.get('title')])
                 rem_count = total - 3
-                return f"Tienes {total} tareas pendientes; las principales son {t_str}, y {rem_count} más."
+                return f"Tienes {total} tareas pendientes{proj_str}; las principales son {t_str}, y {rem_count} más."
 
         elif tool_name == "get_pending_summary":
             rems = data.get("reminders", [])
@@ -238,7 +242,9 @@ class SocialResponseLayer:
             return "He eliminado todas tus tareas y recordatorios pendientes."
 
         elif tool_name == "create_task":
-            return f"Tarea agregada: '{tool_args.get('title')}'."
+            project = tool_args.get("project") or (data.get("task", {}) if isinstance(data.get("task"), dict) else {}).get("project")
+            proj_str = f" en la lista '{project}'" if project and str(project).strip().lower() != "general" else ""
+            return f"Tarea agregada{proj_str}: '{tool_args.get('title')}'."
 
         elif tool_name == "complete_task":
             return "Tarea completada."
@@ -247,6 +253,9 @@ class SocialResponseLayer:
             return "Tarea eliminada."
 
         elif tool_name == "clear_all_tasks":
+            project = tool_args.get("project")
+            if project and str(project).strip().lower() not in ["todos", "general", ""]:
+                return f"Las tareas de la lista '{project}' han sido eliminadas."
             return "Todas tus tareas han sido eliminadas."
 
         elif tool_name == "open_application":

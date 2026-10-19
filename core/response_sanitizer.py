@@ -14,7 +14,7 @@ class ResponseSanitizer:
     )
 
     TECHNICAL_TOKENS_PATTERN = re.compile(
-        r'\b(None|null|undefined|NaN|call_[a-zA-Z0-9_]+|function_call)\b',
+        r'\b(None|null|undefined|NaN|call_[a-zA-Z0-9_]+|function_call)\b|(?:__|@@|%%)?(?:JARVIS_)?VISUAL_BLOCK_\d+(?:__|@@|%%)?|<div\s+class=["\']jarvis-visual-mount["\'][^>]*></div>',
         re.IGNORECASE
     )
 
@@ -163,7 +163,7 @@ class ResponseSanitizer:
         s = re.sub(r'([^\n])\s+(?=JARVIS\s*[·•-]?\s*¿?QUÉ\s+TE\s+APETECE)', r'\1\n\n', s, flags=re.IGNORECASE)
 
         # 0.2 Separar subtítulo en negrita dentro de una tarjeta si está pegado al título
-        s = re.sub(r'(###\s*0?\d+\.\s*[^\n*]+?)\s+(\*\*[^\*\n]+\*\*)', r'\1\n\2', s)
+        s = re.sub(r'(###\s*0?\d+[.\-:\s]\s*[^\n*]+?)\s+(\*\*[^\*\n]+\*\*)', r'\1\n\2', s)
 
         # 1. Separar encabezado previo a una lista numerada (ej. 'menos pensado: 1. ' -> 'menos pensado:\n\n1. ')
         s = re.sub(r'([:;])\s+(?=\d+\.\s+)', r'\1\n\n', s)

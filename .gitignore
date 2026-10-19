@@ -35,3 +35,12 @@ static/audio/*.mp3
 # Archivos de sistema operativo
 .DS_Store
 Thumbs.db
+
+# Android build caches
+android/.gradle/
+android/app/build/
+android/local.properties
+android/.idea/
+tools/bin/
+JARVIS_Portable.zip
+

@@ -391,3 +391,17 @@ def test_visual_components_cards_comparativa_checklist_in_css_and_js():
     assert "renderChecklistBlock" in js
     assert "window.toggleChecklistItem" in js
     assert "formatAssistantMessage" in js
+
+
+def test_visual_block_resilience_and_no_leakage():
+    res_js = client.get("/static/script.js")
+    assert res_js.status_code == 200
+    js = res_js.text
+    # 1. Asegurar placeholders seguros @@JARVIS_VISUAL_BLOCK_
+    assert "@@JARVIS_VISUAL_BLOCK_" in js
+    # 2. Asegurar que existe limpieza de marcadores residuales
+    assert "VISUAL_BLOCK_\\d+" in js
+    # 3. Asegurar que las tarjetas showcase y sugerencias usan placeholders seguros
+    assert "jarvis-showcase-grid" in js
+    assert "jarvis-suggestion-chips-block" in js
+

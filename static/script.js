@@ -495,7 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.isPlayingTTSQueue = false;
             window.isSpeakingAudio = false;
             currentTTSAudio = null;
-            if (uiState.voiceState === "SPEAKING") {
+            if (continuousEnabled) {
+                openConversationalWindow(8000);
+            } else if (uiState.voiceState === "SPEAKING") {
                 setVoiceState("IDLE");
             }
             return;
@@ -515,7 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPlayingTTSQueue = false;
                 window.isPlayingTTSQueue = false;
                 window.isSpeakingAudio = false;
-                setVoiceState("IDLE");
+                if (continuousEnabled) {
+                    openConversationalWindow(8000);
+                } else if (uiState.voiceState === "SPEAKING") {
+                    setVoiceState("IDLE");
+                }
             }
             playNextTTSChunk();
         };
@@ -527,7 +533,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPlayingTTSQueue = false;
                 window.isPlayingTTSQueue = false;
                 window.isSpeakingAudio = false;
-                setVoiceState("IDLE");
+                if (continuousEnabled) {
+                    openConversationalWindow(8000);
+                } else if (uiState.voiceState === "SPEAKING") {
+                    setVoiceState("IDLE");
+                }
             }
             playNextTTSChunk();
         };
@@ -539,7 +549,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPlayingTTSQueue = false;
                 window.isPlayingTTSQueue = false;
                 window.isSpeakingAudio = false;
-                setVoiceState("IDLE");
+                if (continuousEnabled) {
+                    openConversationalWindow(8000);
+                } else if (uiState.voiceState === "SPEAKING") {
+                    setVoiceState("IDLE");
+                }
             }
             playNextTTSChunk();
         });
@@ -750,6 +764,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 continue;
             }
 
+            // Placeholder o montura de bloque visual interactivo
+            if (trimmed.startsWith('<div class="jarvis-visual-mount"') || /^(?:__|@@|%%)(?:JARVIS_)?VISUAL_BLOCK_\d+(?:__|@@|%%)$/.test(trimmed)) {
+                closeOpenLists();
+                result.push(trimmed);
+                continue;
+            }
+
             // Párrafo normal
             closeOpenLists();
             result.push(`<p>${parseInlineMarkdown(trimmed)}</p>`);
@@ -832,44 +853,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    function getThemedFallbackIcon(title, meta, desc) {
-        const combined = `${title || ''} ${meta || ''} ${desc || ''}`.toLowerCase();
-        if (combined.includes('pizza')) return '🍕';
-        if (combined.includes('carbonara') || combined.includes('pasta') || combined.includes('espagueti') || combined.includes('lasagna')) return '🍝';
-        if (combined.includes('risotto') || combined.includes('arroz') || combined.includes('paella')) return '🥘';
-        if (combined.includes('tiramis') || combined.includes('postre') || combined.includes('dulce') || combined.includes('pastel') || combined.includes('gelato')) return '🍰';
-        if (combined.includes('café') || combined.includes('espresso') || combined.includes('cappuccino')) return '☕';
-        if (combined.includes('vino') || combined.includes('trago') || combined.includes('cocktail') || combined.includes('bebida')) return '🍷';
-        if (combined.includes('queso') || combined.includes('mozzarella') || combined.includes('parmesano')) return '🧀';
-        if (combined.includes('pan') || combined.includes('focaccia') || combined.includes('ciabatta')) return '🥖';
-        if (combined.includes('carne') || combined.includes('bife') || combined.includes('steak') || combined.includes('hamburguesa')) return '🥩';
-        if (combined.includes('pescado') || combined.includes('marisco') || combined.includes('sushi') || combined.includes('salmón')) return '🍣';
-        if (combined.includes('ensalada') || combined.includes('vegetal') || combined.includes('tomate')) return '🥗';
-        if (combined.includes('código') || combined.includes('python') || combined.includes('software') || combined.includes('red') || combined.includes('servidor')) return '💻';
-        if (combined.includes('música') || combined.includes('cancion') || combined.includes('rock') || combined.includes('álbum')) return '🎵';
-        if (combined.includes('libro') || combined.includes('estudio') || combined.includes('tema')) return '📚';
-        return '✦';
-    }
+    window.handleShowcaseImgError = function(target) {
+        if (!target) return;
+        const card = target.closest ? target.closest('.jarvis-showcase-card') : target;
+        if (!card) return;
+        card.classList.remove('has-thumb', 'is-loading-img');
+        card.classList.add('no-thumb');
+
+        const thumbCol = card.querySelector('.showcase-thumb-col');
+        const pillRow = card.querySelector('.showcase-pill-row');
+        if (thumbCol && pillRow) {
+            const favBtn = thumbCol.querySelector('.showcase-fav-btn');
+            if (favBtn && !pillRow.querySelector('.showcase-fav-btn')) {
+                favBtn.classList.add('inline-fav-btn');
+                pillRow.appendChild(favBtn);
+            }
+            thumbCol.remove();
+        }
+    };
+
+    window.resolveShowcaseCardImages = function() {
+        const cards = document.querySelectorAll('.jarvis-showcase-card[data-auto-img-query]:not([data-resolving])');
+        if (!cards || cards.length === 0) return;
+
+        cards.forEach(card => {
+            card.setAttribute('data-resolving', 'true');
+            const query = (card.getAttribute('data-auto-img-query') || '').trim();
+            if (!query) {
+                window.handleShowcaseImgError(card);
+                return;
+            }
+
+            // Si el cliente no tiene conexión a internet, nunca dejar emojis ni cajas vacías
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                window.handleShowcaseImgError(card);
+                return;
+            }
+
+            // Consultar endpoint de resolución de imágenes reales de JARVIS
+            fetch(`/api/images/search?q=${encodeURIComponent(query)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(result => {
+                    const imgUrl = (result && result.data && result.data.image_url) ? result.data.image_url : null;
+                    if (!imgUrl) {
+                        window.handleShowcaseImgError(card);
+                        return;
+                    }
+
+                    // Precargar imagen para evitar saltos visuales o enlaces rotos
+                    const preloadImg = new Image();
+                    preloadImg.onload = function() {
+                        const thumbBox = card.querySelector('.showcase-thumb-box');
+                        if (thumbBox) {
+                            thumbBox.classList.remove('showcase-skeleton-box');
+                            thumbBox.innerHTML = `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(query)}" class="showcase-thumb-img" loading="lazy" onerror="window.handleShowcaseImgError(this)" />`;
+                            card.classList.remove('is-loading-img');
+                            card.classList.add('img-loaded');
+                        }
+                    };
+                    preloadImg.onerror = function() {
+                        window.handleShowcaseImgError(card);
+                    };
+                    preloadImg.src = imgUrl;
+                })
+                .catch(err => {
+                    console.debug("[ShowcaseImages] No se pudo obtener imagen externa:", err);
+                    window.handleShowcaseImgError(card);
+                });
+        });
+    };
 
     function buildShowcaseCardHtml(numStr, title, meta, desc, imgUrl) {
         const numDisplay = (numStr && String(numStr).length === 1) ? `0${numStr}` : (numStr || '01');
         const safeTitle = escapeHtml(title || 'Recomendación');
         const safeMeta = meta ? escapeHtml(meta) : '';
         const safeDesc = escapeHtml(desc || '');
-        const icon = getThemedFallbackIcon(title, meta, desc);
 
-        let thumbContent = '';
+        // 1. Si ya viene con URL de imagen válida en el texto/markdown
         if (imgUrl && (imgUrl.startsWith('http') || imgUrl.startsWith('/') || imgUrl.startsWith('data:'))) {
-            thumbContent = `<img src="${escapeHtml(imgUrl)}" alt="${safeTitle}" class="showcase-thumb-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="showcase-thumb-fallback" style="display:none;"><span class="showcase-fallback-icon">${icon}</span></div>`;
-        } else {
-            thumbContent = `<div class="showcase-thumb-fallback"><span class="showcase-fallback-icon">${icon}</span></div>`;
+            return `
+                <div class="jarvis-showcase-card has-thumb">
+                    <div class="showcase-thumb-col">
+                        <div class="showcase-thumb-box">
+                            <img src="${escapeHtml(imgUrl)}" alt="${safeTitle}" class="showcase-thumb-img" loading="lazy" onerror="window.handleShowcaseImgError(this)" />
+                        </div>
+                        <button type="button" class="showcase-fav-btn" onclick="window.toggleCardFav(this)" title="Añadir a Favoritos">
+                            <svg class="fav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                            <span class="fav-text">Añadir a Favoritos</span>
+                        </button>
+                    </div>
+                    <div class="showcase-body-col">
+                        <div class="showcase-pill-row">
+                            <span class="showcase-pill">${escapeHtml(numDisplay)}</span>
+                        </div>
+                        <h4 class="showcase-title">${safeTitle}</h4>
+                        ${safeMeta ? `<span class="showcase-meta">${safeMeta}</span>` : ''}
+                        <p class="showcase-desc">${safeDesc}</p>
+                    </div>
+                </div>
+            `;
         }
 
+        // 2. Si no hay internet o estamos offline: NUNCA dejar emojis ni cajas vacías en la lista
+        const isOffline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+        if (isOffline) {
+            return `
+                <div class="jarvis-showcase-card no-thumb">
+                    <div class="showcase-body-col">
+                        <div class="showcase-pill-row">
+                            <span class="showcase-pill">${escapeHtml(numDisplay)}</span>
+                            <button type="button" class="showcase-fav-btn inline-fav-btn" onclick="window.toggleCardFav(this)" title="Añadir a Favoritos">
+                                <svg class="fav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                <span class="fav-text">Añadir a Favoritos</span>
+                            </button>
+                        </div>
+                        <h4 class="showcase-title">${safeTitle}</h4>
+                        ${safeMeta ? `<span class="showcase-meta">${safeMeta}</span>` : ''}
+                        <p class="showcase-desc">${safeDesc}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Con internet disponible: resolver automáticamente fotografías e ilustraciones reales
         return `
-            <div class="jarvis-showcase-card">
+            <div class="jarvis-showcase-card has-thumb is-loading-img" data-auto-img-query="${safeTitle}">
                 <div class="showcase-thumb-col">
-                    <div class="showcase-thumb-box">
-                        ${thumbContent}
+                    <div class="showcase-thumb-box showcase-skeleton-box">
+                        <div class="showcase-shimmer"></div>
                     </div>
                     <button type="button" class="showcase-fav-btn" onclick="window.toggleCardFav(this)" title="Añadir a Favoritos">
                         <svg class="fav-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -906,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Extraer número de tarjeta
-        const numMatch = s.match(/^###\s*0?(\d+)\.\s*/i);
+        const numMatch = s.match(/^#{1,4}\s*0?(\d+)[.\-:\s]\s*/i);
         if (numMatch) {
             numStr = numMatch[1];
             s = s.substring(numMatch[0].length).trim();
@@ -915,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Caso A: Multilínea
         const lines = s.split('\n').map(l => l.trim()).filter(Boolean);
         if (lines.length >= 2) {
-            title = lines[0].replace(/^[*_#\s]+|[*_#\s]+$/g, '').trim();
+            title = lines[0].replace(/^0?\d+[.\-:\s]\s*/, '').replace(/^[*_#\s]+|[*_#\s]+$/g, '').trim();
 
             let descStartIdx = 1;
             const l1 = lines[1];
@@ -933,27 +1051,30 @@ document.addEventListener('DOMContentLoaded', () => {
             // Caso B: Línea única compacta
             const boldMetaMatch = s.match(/^([^\n*]+?)\s+\*\*([^*]+)\*\*\s+([\s\S]+)$/);
             if (boldMetaMatch) {
-                title = boldMetaMatch[1].trim();
+                title = boldMetaMatch[1].replace(/^0?\d+[.\-:\s]\s*/, '').trim();
                 meta = boldMetaMatch[2].trim();
                 desc = boldMetaMatch[3].trim();
             } else {
                 const sepMetaMatch = s.match(/\b([A-ZÁÉÍÓÚ][a-zñáéíóú]+\s*(?:·|\/)\s*[A-ZÁÉÍÓÚ][a-zñáéíóú]+)\b/);
                 if (sepMetaMatch && sepMetaMatch.index > 0 && sepMetaMatch.index < 50) {
                     const matchPos = sepMetaMatch.index;
-                    title = s.substring(0, matchPos).trim();
+                    title = s.substring(0, matchPos).replace(/^0?\d+[.\-:\s]\s*/, '').trim();
                     meta = sepMetaMatch[1].trim();
                     desc = s.substring(matchPos + sepMetaMatch[0].length).trim();
                 } else {
                     const dotMatch = s.match(/^([^.?!:]{2,45}[:.]?)\s+([A-ZÁÉÍÓÚ][\s\S]+)$/);
                     if (dotMatch) {
-                        title = dotMatch[1].replace(/[:.]$/, '').trim();
+                        title = dotMatch[1].replace(/^0?\d+[.\-:\s]\s*/, '').replace(/[:.]$/, '').trim();
                         desc = dotMatch[2].trim();
                     } else {
-                        title = s;
+                        title = s.replace(/^0?\d+[.\-:\s]\s*/, '').trim();
                     }
                 }
             }
         }
+
+        title = title.replace(/^[*_]+|[*_]+$/g, '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+        meta = meta.replace(/^[*_]+|[*_]+$/g, '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
 
         return { numStr, title, meta, desc, imgUrl };
     }
@@ -961,8 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function extractShowcaseCardsFromMarkdown(text, visualBlocks) {
         if (!text) return text;
 
-        // Patrón A: Encabezados numerados tipo ### 01. Título o ### 1. Título
-        const cardBlockRegex = /(?:^|\n|\s)(###\s*0?\d+\.\s*[\s\S]*?)(?=(?:\s*###\s*0?\d+\.\s*|\s*__VISUAL_BLOCK_|\s*JARVIS|\s*¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|\s*#\s+[A-ZÁÉÍÓÚ]|\s*---|$))/gi;
+        // Patrón A: Encabezados numerados tipo ### 01. Título o ### 1. Título o ## 1 - Título
+        const cardBlockRegex = /(?:^|\n|\s)(#{2,3}\s*0?\d+[.\-:\s]\s*[\s\S]*?)(?=(?:\s*#{2,3}\s*0?\d+[.\-:\s]\s*|\s*(?:__|@@|%%)(?:JARVIS_)?VISUAL_BLOCK_|\s*<div class="jarvis-visual-mount"|\s*JARVIS|\s*¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|\s*#\s+[A-ZÁÉÍÓÚ]|\s*---|$))/gi;
         const matches = Array.from(text.matchAll(cardBlockRegex));
 
         if (matches.length >= 1) {
@@ -979,16 +1100,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardsHtml) {
                 const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
                 const idx = visualBlocks.length;
-                visualBlocks.push(gridHtml);
+                visualBlocks.push({ html: gridHtml, fallback: text.substring(firstIndex, totalSpanEnd) });
 
                 const before = text.substring(0, firstIndex);
                 const after = text.substring(totalSpanEnd);
-                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+                return `${before}\n\n<div class="jarvis-visual-mount" data-block-id="${idx}"></div>\n@@JARVIS_VISUAL_BLOCK_${idx}@@\n\n${after}`;
             }
         }
 
         // Patrón B: Tarjetas con número suelto (ej. 01\n\nPizza napolitana\n\nNápoles · Campania)
-        const patternBRegex = /(?:^|\n)[ \t]*(?:0?(\d{1,2}))\s*\n+([A-ZÁÉÍÓÚ][^\n]+)\n+(?:!\[[^\]]*\]\(([^)]+)\)\s*\n+)?(?:\*\*([^\*\n]+)\*\*|([A-ZÁÉÍÓÚa-zñáéíóú\s]+·[^\n]+))\n+([^\n]+(?:\n+(?![0-9]{1,2}\s*\n|[A-ZÁÉÍÓÚ·\s]+·|JARVIS)[^\n]+)*)/g;
+        const patternBRegex = /(?:^|\n)[ \t]*(?:0?(\d{1,2}))\s*\n+([A-ZÁÉÍÓÚ][^\n]+)\n+(?:!\[[^\]]*\]\(([^)]+)\)\s*\n+)?(?:\*\*([^\*\n]+)\*\*|([A-ZÁÉÍÓÚa-zñáéíóú\s]+·[^\n]+))\n+([^\n]+(?:\n+(?![0-9]{1,2}\s*\n|[A-ZÁÉÍÓÚ·\s]+·|JARVIS|¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR)[^\n]+)*)/g;
         const bMatches = Array.from(text.matchAll(patternBRegex));
         if (bMatches.length >= 2) {
             let firstIndex = bMatches[0].index;
@@ -1008,16 +1129,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardsHtml) {
                 const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
                 const idx = visualBlocks.length;
-                visualBlocks.push(gridHtml);
+                visualBlocks.push({ html: gridHtml, fallback: text.substring(firstIndex, totalSpanEnd) });
 
                 const before = text.substring(0, firstIndex);
                 const after = text.substring(totalSpanEnd);
-                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+                return `${before}\n\n<div class="jarvis-visual-mount" data-block-id="${idx}"></div>\n@@JARVIS_VISUAL_BLOCK_${idx}@@\n\n${after}`;
             }
         }
 
         // Patrón C: Listas numeradas estándar con negrita (ej. 1. **Pizza napolitana** (Nápoles · Campania): Masa...)
-        const patternCRegex = /(?:^|\n)[ \t]*(\d{1,2})\.\s+\*\*([^*]+)\*\*(?:\s*[(·\-]\s*([^):\n]+)[):\-])?\s*[:\-]?\s*([^\n]+(?:\n+(?!\d{1,2}\.\s+\*\*)[^\n]+)*)/g;
+        const patternCRegex = /(?:^|\n)[ \t]*(\d{1,2})\.\s+\*\*([^*]+)\*\*(?:\s*[(·\-]\s*([^):\n]+)[):\-])?\s*[:\-]?\s*([^\n]+(?:\n+(?!(?:\d{1,2}\.\s+\*\*|JARVIS|¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR|#{1,3}\s+|---|__(?:VISUAL_BLOCK_)|@@|<div class="jarvis-visual-mount"))[^\n]+)*)/gi;
         const cMatches = Array.from(text.matchAll(patternCRegex));
         if (cMatches.length >= 2) {
             let firstIndex = cMatches[0].index;
@@ -1036,11 +1157,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardsHtml) {
                 const gridHtml = `<div class="jarvis-showcase-grid">${cardsHtml}</div>`;
                 const idx = visualBlocks.length;
-                visualBlocks.push(gridHtml);
+                visualBlocks.push({ html: gridHtml, fallback: text.substring(firstIndex, totalSpanEnd) });
 
                 const before = text.substring(0, firstIndex);
                 const after = text.substring(totalSpanEnd);
-                return `${before}\n\n__VISUAL_BLOCK_${idx}__\n\n${after}`;
+                return `${before}\n\n<div class="jarvis-visual-mount" data-block-id="${idx}"></div>\n@@JARVIS_VISUAL_BLOCK_${idx}@@\n\n${after}`;
             }
         }
 
@@ -1210,12 +1331,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Extraer y proteger bloques visuales interactivos (acepta 1 a 3 backticks, con o sin saltos de línea)
         const visualBlocks = [];
+        const makeBlockPlaceholder = (idx) => `\n\n<div class="jarvis-visual-mount" data-block-id="${idx}"></div>\n@@JARVIS_VISUAL_BLOCK_${idx}@@\n\n`;
+
         working = working.replace(/`{1,3}(?:cards|flashcards|bento)\b\s*([\s\S]*?)(?:`{1,3}|$)/gi, (match, json) => {
             const rendered = renderCardsBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
-                visualBlocks.push(rendered);
-                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+                visualBlocks.push({ html: rendered, fallback: match });
+                return makeBlockPlaceholder(idx);
             }
             return match;
         });
@@ -1224,8 +1347,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rendered = renderComparativaBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
-                visualBlocks.push(rendered);
-                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+                visualBlocks.push({ html: rendered, fallback: match });
+                return makeBlockPlaceholder(idx);
             }
             return match;
         });
@@ -1234,8 +1357,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rendered = renderChecklistBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
-                visualBlocks.push(rendered);
-                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+                visualBlocks.push({ html: rendered, fallback: match });
+                return makeBlockPlaceholder(idx);
             }
             return match;
         });
@@ -1245,8 +1368,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rendered = renderCardsBlock(json);
             if (rendered) {
                 const idx = visualBlocks.length;
-                visualBlocks.push(rendered);
-                return `\n\n__VISUAL_BLOCK_${idx}__\n\n`;
+                visualBlocks.push({ html: rendered, fallback: match });
+                return makeBlockPlaceholder(idx);
             }
             return match;
         });
@@ -1259,8 +1382,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 1.5 Detectar sección de sugerencias de exploración interactiva (JARVIS · ¿QUÉ TE APETECE EXPLORAR?)
-        const suggestionHeaderRegex = /(?:(?:JARVIS\s*[·•-]?\s*)?¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR\??|EXPLORAR:)\s*\n+([\s\S]+?)(?=(?:\n*###|\n*__VISUAL_BLOCK_|\n*#|---|$))/i;
+        // 1.5 Detectar y transformar tarjetas showcase de Markdown en componentes visuales interactivos
+        working = extractShowcaseCardsFromMarkdown(working, visualBlocks);
+
+        // 1.6 Detectar sección de sugerencias de exploración interactiva (JARVIS · ¿QUÉ TE APETECE EXPLORAR?)
+        const suggestionHeaderRegex = /(?:(?:JARVIS\s*[·•-]?\s*)?¿?\s*QUÉ\s+(?:TE\s+APETECE|DESEAS|QUIERES)\s+EXPLORAR\??|EXPLORAR:)\s*\n+([\s\S]+?)(?=(?:\n*#{2,3}|\n*(?:__|@@|%%)(?:JARVIS_)?VISUAL_BLOCK_|\n*<div class="jarvis-visual-mount"|\n*#\s+[A-ZÁÉÍÓÚ]|---|$))/i;
         const suggMatch = working.match(suggestionHeaderRegex);
         if (suggMatch) {
             const rawList = suggMatch[1].trim();
@@ -1268,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemLines = rawList.split('\n');
             itemLines.forEach(l => {
                 const cleanItem = l.replace(/^[ \t]*[-*•]\s*/, '').replace(/[*_~`]/g, '').trim();
-                if (cleanItem && cleanItem.length < 60 && !cleanItem.startsWith('#')) {
+                if (cleanItem && cleanItem.length < 120 && !cleanItem.startsWith('#')) {
                     items.push(cleanItem);
                 }
             });
@@ -1294,13 +1420,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 chipsHtml += `</div></div>`;
                 const sIdx = visualBlocks.length;
-                visualBlocks.push(chipsHtml);
-                working = working.replace(suggMatch[0], `\n\n__VISUAL_BLOCK_${sIdx}__\n\n`);
+                visualBlocks.push({ html: chipsHtml, fallback: suggMatch[0] });
+                working = working.substring(0, suggMatch.index) + makeBlockPlaceholder(sIdx) + working.substring(suggMatch.index + suggMatch[0].length);
             }
         }
-
-        // 1.6 Detectar y transformar tarjetas showcase de Markdown en componentes visuales interactivos
-        working = extractShowcaseCardsFromMarkdown(working, visualBlocks);
 
         // 2. Normalizar texto markdown general
         const clean = beautifyMarkdownText(working);
@@ -1322,11 +1445,27 @@ document.addEventListener('DOMContentLoaded', () => {
             html = renderMarkdownNative(clean);
         }
 
-        // 4. Restaurar bloques visuales interactivos protegidos
-        visualBlocks.forEach((vHtml, idx) => {
-            html = html.replace(`__VISUAL_BLOCK_${idx}__`, vHtml);
-            html = html.replace(`<p>__VISUAL_BLOCK_${idx}__</p>`, vHtml);
+        // 4. Restaurar bloques visuales interactivos protegidos con regex resiliente
+        visualBlocks.forEach((block, idx) => {
+            const vHtml = (typeof block === 'object' && block !== null) ? block.html : block;
+            const fallback = (typeof block === 'object' && block !== null) ? (block.fallback || "") : "";
+            const safeContent = (vHtml && typeof vHtml === 'string' && vHtml.trim())
+                ? vHtml
+                : (fallback ? renderMarkdownNative(fallback) : "");
+
+            const blockRegex = new RegExp(
+                `(?:<p>\\s*)?(?:<div class="jarvis-visual-mount" data-block-id="${idx}"><\\/div>|(?:<strong>|<b>)?(?:__|@@|%%)?(?:JARVIS_)?VISUAL_BLOCK_${idx}(?:__|@@|%%)?(?:<\\/b>|<\\/strong>)?)(?:\\s*<\\/p>)?`,
+                'gi'
+            );
+            html = html.replace(blockRegex, () => safeContent);
         });
+
+        // 4.1 Limpieza final de seguridad: NUNCA exponer marcadores técnicos residuales ni mounts vacíos
+        html = html.replace(
+            /(?:<p>\s*)?(?:<div class="jarvis-visual-mount"[^>]*><\/div>|(?:<strong>|<b>)?(?:__|@@|%%)?(?:JARVIS_)?VISUAL_BLOCK_\d+(?:__|@@|%%)?(?:<\/b>|<\/strong>)?)(?:\s*<\/p>)?/gi,
+            ''
+        );
+        html = html.replace(/<p>\s*(?:<br\s*\/?>)?\s*<\/p>/gi, '');
 
         // 5. Convertir casillas inline de tareas [ ] o ☐ en checkboxes interactivos
         html = html.replace(/(?:<li>|\n|^)[ \t]*(?:\[ \]|☐)\s*([^\n<]+)/g, (match, txt) => {
@@ -1335,6 +1474,12 @@ document.addEventListener('DOMContentLoaded', () => {
         html = html.replace(/(?:<li>|\n|^)[ \t]*(?:\[x\]|☑)\s*([^\n<]+)/g, (match, txt) => {
             return `<div class="checklist-item inline checked" onclick="window.toggleChecklistItem(this)"><span class="custom-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="item-text">${txt.trim()}</span></div>`;
         });
+        // 6. Activar resolución asíncrona de imágenes reales para tarjetas showcase
+        setTimeout(() => {
+            if (typeof window.resolveShowcaseCardImages === 'function') {
+                window.resolveShowcaseCardImages();
+            }
+        }, 40);
 
         return html;
     }
@@ -1704,7 +1849,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RECONOCIMIENTO DE VOZ WEB SPEECH API ---
+    // --- GESTOR DE VENTANA CONVERSACIONAL Y FLUIDEZ DE DIÁLOGO MANOS LIBRES ---
+    let conversationWindowTimer = null;
+    let speechSilenceTimer = null;
+    let lastProcessedTranscript = "";
+    const CONVERSATION_WINDOW_MS = 8000; // 8 segundos de atención tras hablar
+
+    const WAKE_ACKNOWLEDGMENTS = [
+        "¿Dígame, señor?",
+        "¿Sí? Te escucho.",
+        "¿En qué puedo ayudarte?",
+        "A tus órdenes."
+    ];
+
+    function playSpokenAck() {
+        playActivationChime();
+        const phrase = WAKE_ACKNOWLEDGMENTS[Math.floor(Math.random() * WAKE_ACKNOWLEDGMENTS.length)];
+        enqueueTTSUrl(`/api/tts/stream?text=${encodeURIComponent(phrase)}`);
+        openConversationalWindow(8000);
+    }
+
+    function openConversationalWindow(durationMs = CONVERSATION_WINDOW_MS) {
+        if (!continuousEnabled) return;
+        isConversationActive = true;
+        if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
+
+        // Asegurar que el reconocimiento de voz esté activo y escuchando
+        startContinuousListening();
+
+        setVoiceState("LISTENING", "Te escucho...");
+        if (handsfreeHint) handsfreeHint.textContent = "Conversación abierta (8s)";
+
+        conversationWindowTimer = setTimeout(() => {
+            closeConversationalWindow();
+        }, durationMs);
+    }
+
+    function resetConversationTimer(durationMs = CONVERSATION_WINDOW_MS) {
+        if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
+        if (isConversationActive) {
+            conversationWindowTimer = setTimeout(() => {
+                closeConversationalWindow();
+            }, durationMs);
+        }
+    }
+
+    function closeConversationalWindow() {
+        if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
+        conversationWindowTimer = null;
+        isConversationActive = false;
+        lastProcessedTranscript = "";
+
+        if (uiState.voiceState === "LISTENING") {
+            setVoiceState("IDLE", "Listo (escuchando 'Jarvis'...)");
+            if (handsfreeHint) handsfreeHint.textContent = "Manos Libres Activo";
+        }
+    }
+
+    // --- RECONOCIMIENTO DE VOZ WEB SPEECH API CON VAD Y BARGE-IN ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
 
@@ -1734,23 +1936,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const rawTranscript = (finalTranscript || interimTranscript).trim();
+                if (!rawTranscript) return;
 
+                // 1. BARGE-IN REAL: Si JARVIS está hablando y el usuario empieza a hablar
+                const isJarvisSpeaking = (uiState.voiceState === "SPEAKING" || window.isSpeakingAudio || currentTTSAudio !== null);
+                if (isJarvisSpeaking && rawTranscript.length > 0) {
+                    console.log("[Barge-In] Usuario habló mientras JARVIS hablaba. Interrumpiendo reproducción...");
+                    clearTTSAudioQueue();
+                    uiState.voiceState = "INTERRUPTED";
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        try { ws.send(JSON.stringify({ type: "barge_in" })); } catch (e) {}
+                    }
+                    setVoiceState("LISTENING", "Te escucho...");
+                    openConversationalWindow(8000);
+                }
+
+                // 2. FEEDBACK VISUAL EN TIEMPO REAL: Mostrar lo que el usuario va diciendo
+                if (interimTranscript.trim() && uiState.voiceState === "LISTENING" && voiceStatusText) {
+                    voiceStatusText.textContent = `Escuchando: "${interimTranscript.trim()}"`;
+                }
+
+                // 3. MODO STANDBY (esperando wake word "Jarvis")
                 if (!isConversationActive) {
                     if (WAKE_WORD_REGEX.test(rawTranscript)) {
-                        playActivationChime();
-                        isConversationActive = true;
                         let cleanCommand = rawTranscript.replace(WAKE_WORD_REGEX, '').trim();
-                        setVoiceState("LISTENING", "Te escucho...");
-                        if (cleanCommand.length > 2) {
+                        // Si dijo solo "Jarvis" o "Oye Jarvis"
+                        if (cleanCommand.length <= 2) {
+                            playSpokenAck();
+                        } else {
+                            // Dijo "Jarvis, [comando]"
+                            playActivationChime();
+                            isConversationActive = true;
+                            setVoiceState("PROCESSING", "Procesando...");
                             handleSendMessage(cleanCommand);
                         }
                     }
-                } else {
-                    if (finalTranscript.trim().length > 1) {
-                        const cleanFinal = finalTranscript.replace(WAKE_WORD_REGEX, '').trim();
-                        if (cleanFinal) {
-                            handleSendMessage(cleanFinal);
+                    return;
+                }
+
+                // 4. MODO CONVERSACIÓN ACTIVA (dentro de la ventana conversacional fluida)
+                resetConversationTimer(8000);
+
+                // 4.1 Debounce inteligente de silencio en interimResults (reduce latencia de turno en 900ms)
+                if (interimTranscript.trim().length > 3) {
+                    if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+                    speechSilenceTimer = setTimeout(() => {
+                        if (isConversationActive && interimTranscript.trim().length > 3 && uiState.voiceState !== "PROCESSING") {
+                            const clean = interimTranscript.replace(WAKE_WORD_REGEX, '').trim() || interimTranscript.trim();
+                            if (clean && clean !== lastProcessedTranscript) {
+                                lastProcessedTranscript = clean;
+                                if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
+                                handleSendMessage(clean);
+                            }
                         }
+                    }, 850);
+                }
+
+                // 4.2 Envío inmediato al completarse el turno final de voz
+                if (finalTranscript.trim().length > 1) {
+                    if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+                    const cleanFinal = finalTranscript.replace(WAKE_WORD_REGEX, '').trim() || finalTranscript.trim();
+                    if (cleanFinal && cleanFinal !== lastProcessedTranscript) {
+                        lastProcessedTranscript = cleanFinal;
+                        if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
+                        handleSendMessage(cleanFinal);
                     }
                 }
             };
@@ -1763,10 +2012,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 isSpeechActive = false;
                 if (continuousEnabled) {
                     setTimeout(() => {
-                        if (!isSpeechActive && uiState.voiceState !== "PROCESSING" && uiState.voiceState !== "SPEAKING") {
+                        if (!isSpeechActive) {
                             startContinuousListening();
                         }
-                    }, 100);
+                    }, 80);
                 }
             };
 
@@ -1939,7 +2188,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         userInput.focus();
                     }
                 } else {
-                    alert(data.error || 'No se pudo leer el archivo.');
+                    const errorMsg = (resJson && resJson.error && resJson.error.message) || data.error || (typeof data === 'string' ? data : 'No se pudo leer el archivo.');
+                    alert(errorMsg);
                     clearAttachment();
                 }
             } catch (err) {
@@ -2318,9 +2568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTTSAudioQueue();
             if (SpeechRecognition) {
                 playActivationChime();
-                isConversationActive = true;
-                setVoiceState("LISTENING", "Te escucho...");
-                startContinuousListening(true);
+                openConversationalWindow(8000);
             }
         });
     }
@@ -2330,9 +2578,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTTSAudioQueue();
             if (SpeechRecognition) {
                 playActivationChime();
-                isConversationActive = true;
-                setVoiceState("LISTENING", "Te escucho...");
-                startContinuousListening(true);
+                openConversationalWindow(8000);
             }
         };
 
@@ -3272,4 +3518,128 @@ document.addEventListener('DOMContentLoaded', () => {
             contextDrawer.classList.remove('open');
         });
     }
+
+    // =========================================================================
+    // MODAL DE CONEXIÓN MÓVIL Y ACCESO POR INTERNET (PWA & CLOUDFLARE TUNNEL)
+    // =========================================================================
+    const btnOpenMobile = document.getElementById('btn-open-mobile');
+    const mobileModal = document.getElementById('mobile-connect-modal');
+    const btnCloseMobileModal = document.getElementById('btn-close-mobile-modal');
+    const mobileModalBackdrop = document.getElementById('mobile-modal-backdrop');
+    const qrSvgWrapper = document.getElementById('qr-svg-wrapper');
+    const mobileActiveUrl = document.getElementById('mobile-active-url');
+    const btnCopyMobileUrl = document.getElementById('btn-copy-mobile-url');
+    const btnToggleTunnel = document.getElementById('btn-toggle-tunnel');
+    const tunnelStatusDot = document.getElementById('tunnel-status-dot');
+    const tunnelStatusLabel = document.getElementById('tunnel-status-label');
+    const localIpHint = document.getElementById('local-ip-hint');
+
+    let currentMobileInfo = null;
+
+    async function loadMobileInfo() {
+        try {
+            if (tunnelStatusLabel) tunnelStatusLabel.textContent = "Consultando estado de red...";
+            const res = await fetch('/api/mobile/info');
+            if (res.ok) {
+                const json = await res.json();
+                const data = json.data || {};
+                currentMobileInfo = data;
+                
+                if (qrSvgWrapper && data.qr_svg) {
+                    qrSvgWrapper.innerHTML = data.qr_svg;
+                }
+                const activeUrl = data.internet_url || data.local_url;
+                if (mobileActiveUrl) {
+                    mobileActiveUrl.value = activeUrl;
+                }
+                if (localIpHint) {
+                    localIpHint.textContent = `Local: ${data.local_url}`;
+                }
+
+                if (tunnelStatusDot && tunnelStatusLabel) {
+                    if (data.tunnel_active) {
+                        tunnelStatusDot.classList.add('active');
+                        tunnelStatusLabel.textContent = "Túnel Cloudflare Activo (Acceso Mundial por Internet)";
+                        if (btnToggleTunnel) {
+                            btnToggleTunnel.textContent = "Desactivar Túnel Internet";
+                            btnToggleTunnel.style.background = "rgba(239, 68, 68, 0.25)";
+                            btnToggleTunnel.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                        }
+                    } else {
+                        tunnelStatusDot.classList.remove('active');
+                        tunnelStatusLabel.textContent = "Modo Red Local Wi-Fi (Túnel Internet inactivo)";
+                        if (btnToggleTunnel) {
+                            btnToggleTunnel.textContent = "Activar Túnel Internet (HTTPS)";
+                            btnToggleTunnel.style.background = "";
+                            btnToggleTunnel.style.borderColor = "";
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("[Mobile Connect] Error cargando información:", e);
+        }
+    }
+
+    if (btnOpenMobile && mobileModal) {
+        btnOpenMobile.addEventListener('click', () => {
+            mobileModal.style.display = 'flex';
+            loadMobileInfo();
+        });
+    }
+
+    function closeMobileModal() {
+        if (mobileModal) mobileModal.style.display = 'none';
+    }
+
+    if (btnCloseMobileModal) btnCloseMobileModal.addEventListener('click', closeMobileModal);
+    if (mobileModalBackdrop) mobileModalBackdrop.addEventListener('click', closeMobileModal);
+
+    if (btnCopyMobileUrl && mobileActiveUrl) {
+        btnCopyMobileUrl.addEventListener('click', () => {
+            if (!mobileActiveUrl.value) return;
+            navigator.clipboard.writeText(mobileActiveUrl.value).then(() => {
+                const orig = btnCopyMobileUrl.textContent;
+                btnCopyMobileUrl.textContent = "¡Copiado!";
+                setTimeout(() => { btnCopyMobileUrl.textContent = orig; }, 2000);
+            }).catch(() => {
+                mobileActiveUrl.select();
+                document.execCommand('copy');
+            });
+        });
+    }
+
+    if (btnToggleTunnel) {
+        btnToggleTunnel.addEventListener('click', async () => {
+            const isCurrentlyActive = currentMobileInfo && currentMobileInfo.tunnel_active;
+            const endpoint = isCurrentlyActive ? '/api/mobile/tunnel/stop' : '/api/mobile/tunnel/start';
+            btnToggleTunnel.disabled = true;
+            btnToggleTunnel.textContent = isCurrentlyActive ? "Deteniendo..." : "Conectando túnel seguro...";
+            try {
+                const res = await fetch(endpoint, { method: 'POST' });
+                await loadMobileInfo();
+            } catch (e) {
+                console.error("[Tunnel Action Error]", e);
+            } finally {
+                btnToggleTunnel.disabled = false;
+            }
+        });
+    }
+
+    // --- DESBLOQUEO UNIVERSAL DE AUDIO PARA CELULARES (iOS Safari & Android Chrome) ---
+    let mobileAudioUnlocked = false;
+    function unlockMobileAudio() {
+        if (mobileAudioUnlocked) return;
+        mobileAudioUnlocked = true;
+        try {
+            if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const silent = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+            silent.play().then(() => { silent.pause(); }).catch(() => {});
+        } catch (e) {}
+    }
+    ['touchstart', 'touchend', 'click'].forEach(evt => {
+        document.addEventListener(evt, unlockMobileAudio, { once: true, passive: true });
+    });
 });

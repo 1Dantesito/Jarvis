@@ -144,6 +144,7 @@ class JarvisOrchestrator:
         self.tool_router.register_tool(RecallTool())
         self.tool_router.register_tool(ForgetMemoryTool())
         self.tool_router.register_tool(GetMemorySummaryTool())
+        self.tool_router.register_tool(ClearMemoryTool())
         self.tool_router.register_tool(ExportMemoryTool())
 
         # Recordatorios y Tareas
@@ -152,12 +153,14 @@ class JarvisOrchestrator:
         self.tool_router.register_tool(SnoozeReminderTool())
         self.tool_router.register_tool(CompleteReminderTool())
         self.tool_router.register_tool(PendingSummaryTool())
+        self.tool_router.register_tool(ClearRemindersTool())
         self.tool_router.register_tool(ClearAllPendingTool())
         self.tool_router.register_tool(DeleteReminderTool())
         self.tool_router.register_tool(CreateTaskTool())
         self.tool_router.register_tool(ListTasksTool())
         self.tool_router.register_tool(CompleteTaskTool())
         self.tool_router.register_tool(DeleteTaskTool())
+        self.tool_router.register_tool(ClearTasksTool())
 
         # Web
         self.tool_router.register_tool(ReadWebpageTool())
@@ -373,6 +376,9 @@ Cuando el usuario pida recomendaciones, listas de platos, comidas, conceptos, lu
    [Párrafo breve contextualizando la selección con criterio y buen gusto.]
 
 2. Tarjetas Showcase numeradas (formato limpio Markdown con doble salto entre elementos):
+   - PROHIBIDO USAR EMOJIS en los títulos, subtítulos o descripciones de las tarjetas (ej. nunca '### 01. 🍝 Cacio e Pepe', escribe '### 01. Cacio e Pepe'). El motor visual de JARVIS se encarga de resolver e incrustar automáticamente fotografías e ilustraciones reales.
+   - Si tienes una URL verificada de imagen real o ilustración, puedes incluirla como `![Nombre](url)` al inicio del ítem; si no, coloca el título limpio y JARVIS resolverá la imagen automáticamente en el frontend.
+
    ### 01. [Nombre del Ítem]
    **[Región / Categoría / Subtítulo]**
    [Descripción concisa y atractiva destacando ingredientes, técnicas o características clave.]
@@ -394,6 +400,10 @@ Cuando el usuario pida recomendaciones, listas de platos, comidas, conceptos, lu
 - TABLAS COMPARATIVAS: Usa tablas Markdown estándar (`| Opción | Características | Ventaja Clave |`).
 - GUÍAS DE ESTUDIO / CHECKLISTS: Usa casillas Markdown estándar (`- [ ] Concepto 1\n- [ ] Concepto 2`).
 - REGLA DE LISTAS CLÁSICAS: Separa SIEMPRE cada ítem con doble salto de renglón (`\n\n1. **Concepto**: Explicación`) y párrafos breves.
+- FLUIDEZ Y NATURALIDAD EN DIÁLOGO MANOS LIBRES:
+  - En interacciones habladas, entrega respuestas ágiles, elegantes y directas. La primera oración debe responder de inmediato a la intención del usuario para optimizar la síntesis auditiva en tiempo real.
+  - Evita preámbulos robóticos ("Como asistente virtual...", "A continuación te presento...").
+  - En consultas que inviten a exploración o seguimiento, remata con una pregunta de enlace natural que invite al usuario a continuar la conversación con fluidez.
 
 ---
 
@@ -490,12 +500,16 @@ Tu identidad da continuidad. Tu memoria da contexto. Tu razonamiento da solucion
    - Borrar la cola de música ("borra la lista", "limpia la cola", "para todo") → `clear_music_queue`
    - Recordatorios y pendientes:
      * Crear recordatorio → `create_reminder(title="...", remind_at="...")`
-     * Consultar pendientes o qué tengo que hacer → `get_pending_summary`
-     * Borrar/eliminar TODOS los pendientes, recordatorios o tareas → `clear_all_pending`
+     * Consultar solo recordatorios → `list_reminders`
      * Borrar recordatorio específico → `delete_reminder`
-     * Borrar tarea específica → `delete_task`
-     * Crear tarea → `create_task`
-     * Completar tarea → `complete_task`
+     * Vaciar todos los recordatorios → `clear_all_reminders`
+     * Crear tarea o elemento en lista personalizada → `create_task(title="...", project="nombre_lista")` (ej. 'Compras', 'Trabajo', 'Comida italiana')
+     * Consultar tareas o filtrar por lista personalizada → `list_tasks(project="nombre_lista")` (si no se especifica proyecto, lista todas las tareas activas)
+     * Completar tarea → `complete_task(task_id=...)`
+     * Borrar tarea específica → `delete_task(task_id_or_title="...")`
+     * Vaciar tareas o una lista personalizada → `clear_all_tasks(project="nombre_lista")`
+     * Consultar resumen general consolidado de pendientes y recordatorios → `get_pending_summary`
+     * Borrar/eliminar TODOS los pendientes acumulados (tareas y recordatorios) → `clear_all_pending`
    - Guardar memoria ("Recuerda que...", "Mi X favorito es Y") → `remember_info`
    - Olvidar memoria ("Olvida que...", "Borra el recuerdo de...") → `forget_memory`
    - Consultar qué recuerdas ("¿Qué recuerdas sobre X?") → `recall_memories`

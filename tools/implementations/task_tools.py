@@ -1,36 +1,39 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from tools.router import BaseTool
 from core.memory_manager import memory_manager
 
 class CreateTaskTool(BaseTool):
     name = "create_task"
-    description = "Crea una tarea en la lista de pendientes del usuario."
+    description = "Crea una tarea o ítem en una lista personalizada o de pendientes del usuario."
     parameters_schema = {
         "type": "object",
         "properties": {
-            "title": {"type": "string", "description": "Título de la tarea"},
-            "description": {"type": "string", "description": "Detalles opcionales", "default": ""},
-            "priority": {"type": "string", "enum": ["LOW", "NORMAL", "HIGH"], "default": "NORMAL"}
+            "title": {"type": "string", "description": "Título o contenido de la tarea o ítem"},
+            "description": {"type": "string", "description": "Detalles o notas opcionales", "default": ""},
+            "priority": {"type": "string", "enum": ["LOW", "NORMAL", "HIGH"], "default": "NORMAL"},
+            "project": {"type": "string", "description": "Nombre de la lista personalizada o proyecto (ej. 'Compras', 'Trabajo', 'General')", "default": "General"}
         },
         "required": ["title"]
     }
 
-    async def execute(self, title: str, description: str = "", priority: str = "NORMAL", **kwargs) -> Dict[str, Any]:
-        res = memory_manager.create_task(title=title, description=description, priority=priority)
+    async def execute(self, title: str, description: str = "", priority: str = "NORMAL", project: str = "General", **kwargs) -> Dict[str, Any]:
+        res = memory_manager.create_task(title=title, description=description, priority=priority, project=project)
         return res
 
 class ListTasksTool(BaseTool):
     name = "list_tasks"
-    description = "Obtiene las tareas pendientes del usuario."
+    description = "Obtiene las tareas o ítems de una lista personalizada o de pendientes del usuario."
     parameters_schema = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "project": {"type": "string", "description": "Nombre opcional de la lista o proyecto para filtrar (ej. 'Compras', 'General')"}
+        },
         "required": []
     }
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
-        tasks = memory_manager.list_tasks(include_completed=False)
-        return {"success": True, "data": {"tasks": tasks}, "error": None}
+    async def execute(self, project: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        tasks = memory_manager.list_tasks(include_completed=False, project=project)
+        return {"success": True, "data": {"tasks": tasks, "project": project or "Todos"}, "error": None}
 
 class CompleteTaskTool(BaseTool):
     name = "complete_task"
@@ -66,9 +69,15 @@ class DeleteTaskTool(BaseTool):
 
 class ClearTasksTool(BaseTool):
     name = "clear_all_tasks"
-    description = "Elimina o vacía todas las tareas acumuladas en el sistema."
-    parameters_schema = {"type": "object", "properties": {}, "required": []}
+    description = "Elimina o vacía las tareas de una lista personalizada o todas las tareas acumuladas en el sistema."
+    parameters_schema = {
+        "type": "object",
+        "properties": {
+            "project": {"type": "string", "description": "Nombre opcional de la lista a vaciar (ej. 'Compras'). Si no se indica, vacía todas las tareas."}
+        },
+        "required": []
+    }
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
-        res = memory_manager.clear_all_tasks()
+    async def execute(self, project: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        res = memory_manager.clear_all_tasks(project=project)
         return res

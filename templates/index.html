@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/static/style.css?v=cards_showcase_v8">
+    <link rel="stylesheet" href="/static/style.css?v=real_images_v13">
 </head>
 <body>
     <!-- Fondos Orgánicos Ambientales Sutiles (Café Capibara / Arequipe / Caramelo) -->
@@ -33,8 +33,8 @@
     <!-- Canvas de Partículas Ligeras -->
     <canvas id="boba-canvas" class="boba-canvas"></canvas>
 
-    <!-- Reproductor Oculto de YouTube IFrame -->
-    <div id="ytplayer-container" style="display:none; position:absolute; width:0; height:0; pointer-events:none;">
+    <!-- Reproductor Oculto de YouTube IFrame (Offscreen para soporte móvil y desktop ininterrumpido) -->
+    <div id="ytplayer-container" style="position:fixed; left:-9999px; top:-9999px; width:160px; height:160px; opacity:0.001; pointer-events:none; z-index:-1;">
         <div id="ytplayer"></div>
     </div>
 
@@ -98,6 +98,10 @@
                     <button class="quick-nav-pill liquid-glass-pill" id="btn-open-ambient" title="Generador de Sonidos Ambientales">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M20 12v8H4v-8"/><path d="M6 8l6-6 6 6"/><path d="M12 2v10"/></svg>
                         <span>Ambiente</span>
+                    </button>
+                    <button class="quick-nav-pill liquid-glass-pill" id="btn-open-mobile" title="Conectar Celular / Ver QR y Enlace de Internet">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                        <span>Celular</span>
                     </button>
                     <!-- Selector de tema oculto por petición del usuario (menos botones, mayor estética) -->
                     <button class="icon-btn-pill liquid-glass-pill" id="btn-open-themes" title="Cambiar Atmósfera Visual" style="display:none !important;" aria-hidden="true">
@@ -406,6 +410,70 @@
             </div>
         </div>
 
+        <!-- MODAL: CONECTAR CELULAR / QR & ACCESO INTERNET -->
+        <div class="mobile-modal" id="mobile-connect-modal" style="display:none;">
+            <div class="mobile-modal-backdrop" id="mobile-modal-backdrop"></div>
+            <div class="mobile-modal-card liquid-glass-panel">
+                <div class="mobile-modal-header">
+                    <div class="mobile-modal-title">
+                        <div class="mobile-icon-badge">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00F2FE" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                        </div>
+                        <div>
+                            <h3>Conectar con tu Celular</h3>
+                            <p class="subtext">Accede a JARVIS desde cualquier lugar con Internet</p>
+                        </div>
+                    </div>
+                    <button class="icon-btn sm" id="btn-close-mobile-modal" title="Cerrar">✕</button>
+                </div>
+                <div class="mobile-modal-body">
+                    <div class="qr-display-container">
+                        <div class="qr-svg-wrapper" id="qr-svg-wrapper">
+                            <div class="qr-loading-spinner">Generando código QR...</div>
+                        </div>
+                        <span class="qr-scan-hint">Apunta la cámara de tu celular a la pantalla para abrir</span>
+                    </div>
+
+                    <div class="connection-status-box">
+                        <div class="conn-status-row">
+                            <span class="status-indicator-dot" id="tunnel-status-dot"></span>
+                            <strong id="tunnel-status-label">Comprobando túnel de Internet...</strong>
+                        </div>
+                        <div class="conn-url-row">
+                            <input type="text" id="mobile-active-url" readonly value="" placeholder="Cargando enlace...">
+                            <button type="button" class="btn-copy-url" id="btn-copy-mobile-url" title="Copiar enlace">Copiar</button>
+                        </div>
+                        <div class="tunnel-controls-row">
+                            <button type="button" class="btn-tunnel-action" id="btn-toggle-tunnel">Activar Túnel Internet (HTTPS)</button>
+                            <span class="local-ip-hint" id="local-ip-hint">Local: http://...</span>
+                        </div>
+                    </div>
+
+                    <div class="mobile-apk-box" style="display:flex; flex-direction:column; gap:8px; background:rgba(0,242,254,0.08); border:1px solid rgba(0,242,254,0.3); border-radius:16px; padding:14px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:1.3rem;">🤖</span>
+                            <strong style="color:#FFFFFF; font-size:0.95rem;">Aplicación Nativa Android (APK)</strong>
+                        </div>
+                        <p style="margin:0; font-size:0.83rem; color:#A0C4DF;">Instala JARVIS directamente en tu teléfono Android con aceleración por hardware, audio continuo y permisos de micrófono automáticos.</p>
+                        <a href="/download/jarvis.apk" download="JARVIS.apk" class="btn-download-apk" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; background:linear-gradient(135deg, #00F2FE 0%, #0088FF 100%); color:#030810; font-weight:700; padding:10px 18px; border-radius:10px; font-size:0.9rem; margin-top:4px; box-shadow:0 0 15px rgba(0,242,254,0.4); transition:all 0.2s;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span>Descargar JARVIS.apk (12.3 MB)</span>
+                        </a>
+                    </div>
+
+                    <div class="mobile-instructions-card">
+                        <h4>📱 Cómo instalarlo como App en tu Celular (PWA)</h4>
+                        <ol>
+                            <li>Abre el enlace en el navegador de tu celular (Safari en iPhone o Chrome en Android).</li>
+                            <li><strong>En iPhone:</strong> Pulsa el botón <em>Compartir</em> (ícono de cuadro con flecha) y elige <strong>"Agregar a la pantalla de inicio"</strong>.</li>
+                            <li><strong>En Android:</strong> Pulsa los <em>3 puntos</em> y elige <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.</li>
+                            <li>¡Listo! Se abrirá a pantalla completa sin barra de navegación, con voz, música y todas las funciones de JARVIS.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Drawer Lateral de Memoria Permanente -->
         <aside class="memory-drawer" id="memory-drawer">
             <div class="drawer-header">
@@ -489,7 +557,7 @@
     <!-- Scripts -->
     <script src="/static/marked.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="/static/script.js?v=cards_showcase_v9"></script>
+    <script src="/static/script.js?v=handsfree_dialogue_v14"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
