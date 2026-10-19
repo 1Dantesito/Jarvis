@@ -30,7 +30,7 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), JarvisMediaService.PlaybackControlListener {
 
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var cameraPhotoPath: String? = null
+    private var isMusicPlaying: Boolean = false
 
     private val PREFS_NAME = "jarvis_mobile_prefs"
     private val KEY_SERVER_URL = "server_url"
@@ -73,6 +74,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        JarvisMediaService.playbackListener = this
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         // 1. Solicitar permisos de micrófono y cámara en tiempo de ejecución
@@ -147,6 +149,11 @@ class MainActivity : ComponentActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.CAMERA)
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         if (permissions.isNotEmpty()) {
             requestPermissionsLauncher.launch(permissions.toTypedArray())
         }
@@ -164,6 +171,13 @@ class MainActivity : ComponentActivity() {
         s.loadWithOverviewMode = true
         s.useWideViewPort = true
         s.cacheMode = WebSettings.LOAD_DEFAULT
+        s.setOffscreenPreRaster(true)
+
+        // Habilitar cookies de terceros para YouTube y servicios de streaming
+        CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
+
+        // Registrar puente nativo para sincronizar estado de música y controles de audífonos
+        wv.addJavascriptInterface(JarvisJsBridge(this), "AndroidJarvis")
 
         // Eliminar 'wv' del User-Agent para compatibilidad total con YouTube y SpeechRecognition
         val defaultUa = s.userAgentString
@@ -429,6 +443,93 @@ class MainActivity : ComponentActivity() {
             webView.goBack()
         } else {
             super.onBackPressed()
+        }
+    }
+
+    // --- INTEGRACIÓN DE REPRODUCCIÓN EN SEGUNDO PLANO Y AUDÍFONOS ---
+
+    override fun onNativePlay() {
+        runOnUiThread {
+            webView.evaluateJavascript("window.togglePlayPauseFromNative && window.togglePlayPauseFromNative(true);", null)
+        }
+    }
+
+    override fun onNativePause() {
+        runOnUiThread {
+            webView.evaluateJavascript("window.togglePlayPauseFromNative && window.togglePlayPauseFromNative(false);", null)
+        }
+    }
+
+    override fun onNativeNext() {
+        runOnUiThread {
+            webView.evaluateJavascript("window.skipNextFromNative && window.skipNextFromNative();", null)
+        }
+    }
+
+    override fun onNativePrev() {
+        runOnUiThread {
+            webView.evaluateJavascript("window.skipPrevFromNative && window.skipPrevFromNative();", null)
+        }
+    }
+
+    fun updateMediaPlayback(isPlaying: Boolean, title: String, artist: String) {
+        isMusicPlaying = isPlaying
+        val serviceIntent = Intent(this, JarvisMediaService::class.java).apply {
+            action = if (isPlaying) JarvisMediaService.ACTION_PLAY else JarvisMediaService.ACTION_PAUSE
+            putExtra(JarvisMediaService.EXTRA_TITLE, title)
+            putExtra(JarvisMediaService.EXTRA_ARTIST, artist)
+            putExtra(JarvisMediaService.EXTRA_IS_PLAYING, isPlaying)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (!isMusicPlaying) {
+            webView.onPause()
+        } else {
+            // Mantiene los timers de JavaScript y audio activos para reproducción ininterrumpida con pantalla apagada
+            webView.resumeTimers()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (isMusicPlaying) {
+            webView.resumeTimers()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        webView.onResume()
+        webView.resumeTimers()
+    }
+
+    override fun onDestroy() {
+        JarvisMediaService.playbackListener = null
+        if (!isMusicPlaying) {
+            try {
+                stopService(Intent(this, JarvisMediaService::class.java))
+            } catch (e: Exception) {}
+        }
+        super.onDestroy()
+    }
+
+    class JarvisJsBridge(private val activity: MainActivity) {
+        @JavascriptInterface
+        fun onMusicStateChanged(isPlaying: Boolean, title: String?, artist: String?) {
+            activity.runOnUiThread {
+                activity.updateMediaPlayback(isPlaying, title ?: "Música", artist ?: "JARVIS AI")
+            }
         }
     }
 }

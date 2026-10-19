@@ -288,6 +288,86 @@ function initializeYouTubePlayer() {
 }
 window.onYouTubeIframeAPIReady = () => initializeYouTubePlayer();
 
+// --- PROTECCIÓN PARA REPRODUCCIÓN EN SEGUNDO PLANO Y PANTALLA APAGADA ---
+try {
+    Object.defineProperty(document, 'hidden', {
+        get: function() { return false; },
+        configurable: true
+    });
+    Object.defineProperty(document, 'visibilityState', {
+        get: function() { return 'visible'; },
+        configurable: true
+    });
+    Object.defineProperty(document, 'webkitHidden', {
+        get: function() { return false; },
+        configurable: true
+    });
+    Object.defineProperty(document, 'webkitVisibilityState', {
+        get: function() { return 'visible'; },
+        configurable: true
+    });
+} catch (e) {
+    console.debug("[Background Audio] Error al configurar propiedades de visibilidad:", e);
+}
+
+window.addEventListener('visibilitychange', function(e) {
+    if (window.isStudioPlaying) {
+        e.stopImmediatePropagation();
+    }
+}, true);
+
+window.addEventListener('pagehide', function(e) {
+    if (window.isStudioPlaying) {
+        e.stopImmediatePropagation();
+    }
+}, true);
+
+// Variable para distinguir pausa intencionada del usuario de pausas automáticas de pantalla apagada
+window.isExplicitUserPause = false;
+
+// Sincronización con el servicio nativo de Android (Notificaciones, pantalla de bloqueo y audífonos)
+function notifyNativeMusicState(isPlaying, title, artist) {
+    if (window.AndroidJarvis && typeof window.AndroidJarvis.onMusicStateChanged === 'function') {
+        try {
+            window.AndroidJarvis.onMusicStateChanged(!!isPlaying, title || "", artist || "");
+        } catch (e) {
+            console.debug("[AndroidJarvis] Error notificando estado:", e);
+        }
+    }
+}
+
+// Controladores nativos invocados por botones de audífonos cableados / Bluetooth o notificación
+window.togglePlayPauseFromNative = function(forcePlay) {
+    if (!isPlayerReady || !ytPlayer) return;
+    try {
+        const shouldPlay = (forcePlay !== undefined) ? forcePlay : !window.isStudioPlaying;
+        if (shouldPlay) {
+            window.isStudioPlaying = true;
+            window.isExplicitUserPause = false;
+            if (typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
+        } else {
+            window.isStudioPlaying = false;
+            window.isExplicitUserPause = true;
+            if (typeof ytPlayer.pauseVideo === 'function') ytPlayer.pauseVideo();
+        }
+    } catch (e) {
+        console.warn("[NativeControl] Error en togglePlayPause:", e);
+    }
+};
+
+window.skipNextFromNative = function() {
+    playNextTrackInQueue();
+};
+
+window.skipPrevFromNative = function() {
+    if (window.playlistData && window.playlistData.length > 0) {
+        const prev = (window.currentTrackIdx - 1 + window.playlistData.length) % window.playlistData.length;
+        if (typeof window.playTrackFromStudio === 'function') {
+            window.playTrackFromStudio(prev);
+        }
+    }
+};
+
 // Funciones para ducking y control de volumen musical
 window.duckMusicForTTS = function() {
     if (isPlayerReady && ytPlayer && typeof ytPlayer.setVolume === 'function') {
@@ -311,6 +391,7 @@ function onPlayerStateChange(event) {
 
     if (event.data === YT.PlayerState.PLAYING) {
         window.isStudioPlaying = true;
+        window.isExplicitUserPause = false;
         if (typeof window.stopSpeechForMusicPlayback === 'function') {
             window.stopSpeechForMusicPlayback();
         }
@@ -322,10 +403,15 @@ function onPlayerStateChange(event) {
         }
         if (studioModal) studioModal.classList.add('playing');
         
+        let trackTitle = 'Música';
+        let trackArtist = 'JARVIS AI';
+
         try {
             if (ytPlayer && typeof ytPlayer.getVideoData === 'function') {
                 const vData = ytPlayer.getVideoData();
                 if (vData && vData.title) {
+                    trackTitle = vData.title;
+                    trackArtist = vData.author || 'JARVIS AI';
                     const playerTrackTitle = document.getElementById('player-track-title');
                     const playerTrackArtist = document.getElementById('player-track-artist');
                     const studioTitle = document.getElementById('studio-main-title');
@@ -340,12 +426,26 @@ function onPlayerStateChange(event) {
             console.debug("[YouTube Player] Error leyendo videoData:", e);
         }
 
+        notifyNativeMusicState(true, trackTitle, trackArtist);
+
         startProgressTracking();
         if (typeof window.renderMusicStudioPlaylist === 'function') {
             window.renderMusicStudioPlaylist();
         }
     } else if (event.data === YT.PlayerState.PAUSED) {
+        // Si el usuario NO presionó pausar intencionalmente y la pantalla se apagó, forzar reanudación inmediata
+        if (window.isStudioPlaying && !window.isExplicitUserPause) {
+            setTimeout(() => {
+                if (window.isStudioPlaying && !window.isExplicitUserPause && ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                    ytPlayer.playVideo();
+                }
+            }, 80);
+            return;
+        }
+
         window.isStudioPlaying = false;
+        notifyNativeMusicState(false);
+
         if (typeof window.resumeSpeechAfterMusicPlayback === 'function') {
             window.resumeSpeechAfterMusicPlayback();
         }
@@ -359,6 +459,8 @@ function onPlayerStateChange(event) {
         }
     } else if (event.data === YT.PlayerState.ENDED) {
         window.isStudioPlaying = false;
+        notifyNativeMusicState(false);
+
         if (typeof window.resumeSpeechAfterMusicPlayback === 'function') {
             window.resumeSpeechAfterMusicPlayback();
         }
@@ -3022,6 +3124,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (track.videoId || track.id) {
             startTrackPlayback(track.videoId || track.id, track.title, track.artist);
         }
+
+        window.isExplicitUserPause = false;
+        notifyNativeMusicState(true, track.title, track.artist);
     };
 
     window.addTrackToStudioQueue = function(title, artist, videoId, duration) {
@@ -3160,6 +3265,8 @@ document.addEventListener('DOMContentLoaded', () => {
         studioBtnPlayPause.addEventListener('click', () => {
             if (window.playlistData.length === 0) return;
             window.isStudioPlaying = !window.isStudioPlaying;
+            window.isExplicitUserPause = !window.isStudioPlaying;
+
             studioBtnPlayPause.innerHTML = window.isStudioPlaying
                 ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
                 : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
@@ -3178,6 +3285,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (miniPlayerEl) miniPlayerEl.classList.toggle('playing', window.isStudioPlaying);
             if (studioModal) studioModal.classList.toggle('playing', window.isStudioPlaying);
             window.renderMusicStudioPlaylist();
+
+            notifyNativeMusicState(window.isStudioPlaying);
         });
     }
 
