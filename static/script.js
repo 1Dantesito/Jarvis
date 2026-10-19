@@ -270,6 +270,7 @@ function initializeYouTubePlayer() {
                 'controls': 0,
                 'disablekb': 1,
                 'enablejsapi': 1,
+                'playsinline': 1,
                 'origin': window.location.origin
             },
             events: {
@@ -287,6 +288,21 @@ function initializeYouTubePlayer() {
 }
 window.onYouTubeIframeAPIReady = () => initializeYouTubePlayer();
 
+// Funciones para ducking y control de volumen musical
+window.duckMusicForTTS = function() {
+    if (isPlayerReady && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        ytPlayer.setVolume(20);
+    }
+};
+
+window.restoreMusicVolume = function() {
+    if (isPlayerReady && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        const studioVolSlider = document.getElementById('studio-volume-slider');
+        const normalVol = studioVolSlider ? parseInt(studioVolSlider.value, 10) : 100;
+        ytPlayer.setVolume(normalVol || 100);
+    }
+};
+
 function onPlayerStateChange(event) {
     const playPauseBtn = document.getElementById('btn-playpause');
     const studioPlayPauseBtn = document.getElementById('studio-btn-playpause');
@@ -295,6 +311,9 @@ function onPlayerStateChange(event) {
 
     if (event.data === YT.PlayerState.PLAYING) {
         window.isStudioPlaying = true;
+        if (typeof window.stopSpeechForMusicPlayback === 'function') {
+            window.stopSpeechForMusicPlayback();
+        }
         if (playPauseBtn) playPauseBtn.textContent = '⏸';
         if (studioPlayPauseBtn) studioPlayPauseBtn.textContent = '⏸';
         if (miniPlayer) {
@@ -327,6 +346,9 @@ function onPlayerStateChange(event) {
         }
     } else if (event.data === YT.PlayerState.PAUSED) {
         window.isStudioPlaying = false;
+        if (typeof window.resumeSpeechAfterMusicPlayback === 'function') {
+            window.resumeSpeechAfterMusicPlayback();
+        }
         if (playPauseBtn) playPauseBtn.textContent = '▶';
         if (studioPlayPauseBtn) studioPlayPauseBtn.textContent = '▶';
         if (miniPlayer) miniPlayer.classList.remove('playing');
@@ -337,6 +359,9 @@ function onPlayerStateChange(event) {
         }
     } else if (event.data === YT.PlayerState.ENDED) {
         window.isStudioPlaying = false;
+        if (typeof window.resumeSpeechAfterMusicPlayback === 'function') {
+            window.resumeSpeechAfterMusicPlayback();
+        }
         if (playPauseBtn) playPauseBtn.textContent = '▶';
         if (studioPlayPauseBtn) studioPlayPauseBtn.textContent = '▶';
         if (miniPlayer) miniPlayer.classList.remove('playing');
@@ -419,7 +444,6 @@ function startTrackPlayback(videoId, title, artist) {
         if (isPlayerReady && ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
             try {
                 ytPlayer.loadVideoById(videoId);
-                ytPlayer.playVideo();
             } catch (err) {
                 console.warn("[YouTube Player] Error en loadVideoById:", err);
             }
@@ -481,7 +505,34 @@ document.addEventListener('DOMContentLoaded', () => {
         ttsAudioQueue.push(audio);
 
         if (!isPlayingTTSQueue) {
+            if (typeof window.duckMusicForTTS === 'function') {
+                window.duckMusicForTTS();
+            }
             playNextTTSChunk();
+        }
+    }
+
+    function onTTSPlaybackFinished() {
+        isPlayingTTSQueue = false;
+        window.isPlayingTTSQueue = false;
+        window.isSpeakingAudio = false;
+        currentTTSAudio = null;
+
+        if (typeof window.restoreMusicVolume === 'function') {
+            window.restoreMusicVolume();
+        }
+
+        if (window.wasMusicPlayingBeforeMic) {
+            window.wasMusicPlayingBeforeMic = false;
+            if (isPlayerReady && ytPlayer && typeof ytPlayer.playVideo === 'function' && !window.isStudioPlaying) {
+                ytPlayer.playVideo();
+            }
+        }
+
+        if (continuousEnabled && !window.isStudioPlaying && !window.isMusicPlaying) {
+            openConversationalWindow(8000);
+        } else if (uiState.voiceState === "SPEAKING") {
+            setVoiceState("IDLE");
         }
     }
 
@@ -491,15 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (ttsAudioQueue.length === 0) {
-            isPlayingTTSQueue = false;
-            window.isPlayingTTSQueue = false;
-            window.isSpeakingAudio = false;
-            currentTTSAudio = null;
-            if (continuousEnabled) {
-                openConversationalWindow(8000);
-            } else if (uiState.voiceState === "SPEAKING") {
-                setVoiceState("IDLE");
-            }
+            onTTSPlaybackFinished();
             return;
         }
 
@@ -514,14 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTTSAudio.onended = () => {
             currentTTSAudio = null;
             if (ttsAudioQueue.length === 0) {
-                isPlayingTTSQueue = false;
-                window.isPlayingTTSQueue = false;
-                window.isSpeakingAudio = false;
-                if (continuousEnabled) {
-                    openConversationalWindow(8000);
-                } else if (uiState.voiceState === "SPEAKING") {
-                    setVoiceState("IDLE");
-                }
+                onTTSPlaybackFinished();
             }
             playNextTTSChunk();
         };
@@ -530,14 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("[TTS Chunk Error]", e);
             currentTTSAudio = null;
             if (ttsAudioQueue.length === 0) {
-                isPlayingTTSQueue = false;
-                window.isPlayingTTSQueue = false;
-                window.isSpeakingAudio = false;
-                if (continuousEnabled) {
-                    openConversationalWindow(8000);
-                } else if (uiState.voiceState === "SPEAKING") {
-                    setVoiceState("IDLE");
-                }
+                onTTSPlaybackFinished();
             }
             playNextTTSChunk();
         };
@@ -546,14 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("[TTS Play Error]", e);
             currentTTSAudio = null;
             if (ttsAudioQueue.length === 0) {
-                isPlayingTTSQueue = false;
-                window.isPlayingTTSQueue = false;
-                window.isSpeakingAudio = false;
-                if (continuousEnabled) {
-                    openConversationalWindow(8000);
-                } else if (uiState.voiceState === "SPEAKING") {
-                    setVoiceState("IDLE");
-                }
+                onTTSPlaybackFinished();
             }
             playNextTTSChunk();
         });
@@ -578,6 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentTTSAudio.load();
             } catch (e) {}
             currentTTSAudio = null;
+        }
+        if (typeof window.restoreMusicVolume === 'function') {
+            window.restoreMusicVolume();
         }
         if (uiState.voiceState === "SPEAKING") {
             setVoiceState("IDLE");
@@ -1871,11 +1896,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openConversationalWindow(durationMs = CONVERSATION_WINDOW_MS) {
         if (!continuousEnabled) return;
+        // Si hay música sonando y no fue activación manual del usuario (tap en micrófono u orbe),
+        // no abrir ventana de escucha para evitar capturar la letra del altavoz
+        if ((window.isStudioPlaying || window.isMusicPlaying) && !window.isManualMicTrigger) return;
+        window.isManualMicTrigger = false;
+
         isConversationActive = true;
         if (conversationWindowTimer) clearTimeout(conversationWindowTimer);
 
         // Asegurar que el reconocimiento de voz esté activo y escuchando
-        startContinuousListening();
+        startContinuousListening(true);
 
         setVoiceState("LISTENING", "Te escucho...");
         if (handsfreeHint) handsfreeHint.textContent = "Conversación abierta (8s)";
@@ -2010,12 +2040,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             rec.onend = () => {
                 isSpeechActive = false;
-                if (continuousEnabled) {
+                if (continuousEnabled && !window.isStudioPlaying && !window.isMusicPlaying) {
                     setTimeout(() => {
-                        if (!isSpeechActive) {
+                        if (!isSpeechActive && !window.isStudioPlaying && !window.isMusicPlaying) {
                             startContinuousListening();
                         }
-                    }, 80);
+                    }, 120);
                 }
             };
 
@@ -2030,6 +2060,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startContinuousListening(force = false) {
         if (!continuousEnabled || !SpeechRecognition) return;
+        // Si hay música activa y no es una activación manual explícita, no tomar el micrófono
+        if ((window.isStudioPlaying || window.isMusicPlaying) && !window.isManualMicTrigger) return;
         if (!recognition) recognition = initSpeechRecognition();
         if (!recognition) return;
 
@@ -2046,6 +2078,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
+    // Funciones globales para coordinar silencio de micrófono con reproducción musical
+    window.stopSpeechForMusicPlayback = function() {
+        window.isMusicPlaying = true;
+        if (isSpeechActive && recognition) {
+            try { recognition.stop(); } catch (e) {}
+            isSpeechActive = false;
+        }
+        if (conversationWindowTimer) {
+            clearTimeout(conversationWindowTimer);
+            conversationWindowTimer = null;
+        }
+        isConversationActive = false;
+        lastProcessedTranscript = "";
+        if (speechSilenceTimer) {
+            clearTimeout(speechSilenceTimer);
+            speechSilenceTimer = null;
+        }
+        if (uiState.voiceState === "LISTENING") {
+            setVoiceState("IDLE", "Reproduciendo música...");
+        }
+    };
+
+    window.resumeSpeechAfterMusicPlayback = function() {
+        window.isMusicPlaying = false;
+        if (continuousEnabled) {
+            setTimeout(() => {
+                if (!window.isStudioPlaying && !window.isMusicPlaying && !isSpeechActive) {
+                    startContinuousListening();
+                }
+            }, 300);
+        }
+    };
 
     startContinuousListening();
 
@@ -2567,6 +2632,11 @@ document.addEventListener('DOMContentLoaded', () => {
         micBtn.addEventListener('click', () => {
             clearTTSAudioQueue();
             if (SpeechRecognition) {
+                window.isManualMicTrigger = true;
+                if (window.isStudioPlaying && isPlayerReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    window.wasMusicPlayingBeforeMic = true;
+                    ytPlayer.pauseVideo();
+                }
                 playActivationChime();
                 openConversationalWindow(8000);
             }
@@ -2577,6 +2647,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const triggerOrbActivation = () => {
             clearTTSAudioQueue();
             if (SpeechRecognition) {
+                window.isManualMicTrigger = true;
+                if (window.isStudioPlaying && isPlayerReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    window.wasMusicPlayingBeforeMic = true;
+                    ytPlayer.pauseVideo();
+                }
                 playActivationChime();
                 openConversationalWindow(8000);
             }

@@ -91,10 +91,10 @@ def test_index_html_mobile_elements():
     assert 'id="qr-svg-wrapper"' in content
     assert 'id="mobile-active-url"' in content
 
-    # YouTube player offscreen para celular (no display:none)
+    # YouTube player transparente para celular y desktop (no display:none ni offscreen throttling)
     assert 'id="ytplayer-container"' in content
     assert 'position:fixed' in content or 'position: fixed' in content
-    assert 'left:-9999px' in content or 'left: -9999px' in content
+    assert 'pointer-events:none' in content or 'pointer-events: none' in content
 
 def test_css_mobile_modal_and_safe_areas():
     css_path = settings.STATIC_DIR / "style.css"
